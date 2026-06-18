@@ -210,10 +210,40 @@ def build_codebase_graph() -> bool:
         return False
 
 def build_all() -> bool:
-    """Costruisce entrambi i grafi (Wiki e Codebase)."""
-    ok_wiki = build_wiki_graph()
-    ok_code = build_codebase_graph()
-    return ok_wiki and ok_code
+    """Costruisce entrambi i grafi (Wiki e Codebase) prevenendo esecuzioni parallele."""
+    import time
+    vault_path = get_vault_path()
+    lock_file = os.path.join(vault_path, "engine", "graphify.lock")
+    
+    # Previene deadlocks e corse critiche controllando l'età del lock (scade dopo 15 minuti)
+    if os.path.exists(lock_file):
+        try:
+            mtime = os.path.getmtime(lock_file)
+            if time.time() - mtime < 900: # 15 minuti
+                print("[Graphify] Un'altra istanza di Graphify è già in esecuzione (lock attivo). Esco per evitare collisioni di rate limit.")
+                return False
+        except Exception:
+            pass
+            
+    # Crea il file di lock
+    try:
+        os.makedirs(os.path.dirname(lock_file), exist_ok=True)
+        with open(lock_file, "w") as f:
+            f.write(str(os.getpid()))
+    except Exception as e:
+        print(f"[Graphify] Impossibile creare il file di lock: {e}")
+        
+    try:
+        ok_wiki = build_wiki_graph()
+        ok_code = build_codebase_graph()
+        return ok_wiki and ok_code
+    finally:
+        # Rilascia il file di lock
+        try:
+            if os.path.exists(lock_file):
+                os.remove(lock_file)
+        except Exception:
+            pass
 
 async def run_graphify_async():
     """Innesca la build asincrona non bloccante dei grafi (Scenario A + B)."""
