@@ -1489,9 +1489,9 @@
             color: #ffffff !important;
         }
 
-        /* SIDEBAR (Wider and aligned with admin.html) */
+        /* SIDEBAR (Narrowed with icons only) */
         .sidebar {
-            width: 260px !important;
+            width: 80px !important;
             background: #000000 !important;
             border-right: 2px solid #000000 !important;
             box-shadow: none !important;
@@ -1500,8 +1500,8 @@
         
         .sidebar-brand {
             border-bottom: 2px solid #222222 !important;
-            padding: 24px !important;
-            justify-content: flex-start !important;
+            padding: 24px 10px !important;
+            justify-content: center !important;
         }
         
         .sidebar-brand::after {
@@ -1513,29 +1513,29 @@
         }
 
         .sidebar-menu {
-            padding: 24px 12px !important;
-            align-items: stretch !important;
-            gap: 8px !important;
+            padding: 24px 8px !important;
+            align-items: center !important;
+            gap: 12px !important;
         }
         
         .sidebar-item, .sidebar-link {
-            width: auto !important;
-            height: auto !important;
-            padding: 12px 16px !important;
+            width: 50px !important;
+            height: 50px !important;
+            padding: 0 !important;
             border-radius: 0 !important;
             border: none !important;
             text-transform: lowercase !important;
             color: #ffffff !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: flex-start !important;
-            gap: 12px !important;
+            justify-content: center !important;
+            gap: 0 !important;
             font-size: 0.95rem !important;
             font-weight: 500 !important;
         }
         
         .sidebar-item span, .sidebar-link span {
-            display: inline !important;
+            display: none !important; /* Nasconde i testi */
         }
         
         .sidebar-item:hover, .sidebar-link:hover {
@@ -1555,29 +1555,34 @@
         }
 
         .sidebar-status {
-            padding: 20px !important;
+            padding: 20px 8px !important;
             background: #000000 !important;
             border-top: 2px solid #222222 !important;
             color: #ffffff !important;
             font-size: 0.8rem !important;
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 6px !important;
         }
         
         .status-indicator {
             display: flex !important;
             align-items: center !important;
-            gap: 8px !important;
-            justify-content: flex-start !important;
+            gap: 0 !important;
+            justify-content: center !important;
         }
         
         .status-indicator span {
-            display: inline !important;
+            display: none !important; /* Nasconde il testo del servizio */
         }
         
         .status-queue-info {
             display: block !important;
-            margin-top: 6px !important;
+            margin-top: 0 !important;
             color: #888888 !important;
+            font-size: 0.75rem !important;
+            text-align: center !important;
         }
 
         /* PANELS */
@@ -1590,7 +1595,7 @@
             background: #ffffff !important;
             border-left: 2px solid #000000 !important;
             box-shadow: none !important;
-            width: 480px !important;
+            width: 50vw !important;
         }
 
         /* CHAT MESSAGE BUBBLES */
@@ -1915,7 +1920,7 @@
     <!-- LEFT SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-brand">
-            <span class="circled-text" id="sidebar-logo">cervello</span>
+            <span class="circled-text" id="sidebar-logo">c</span>
         </div>
         
         <div class="sidebar-menu">
@@ -1957,7 +1962,7 @@
                 <span id="sidebar-status-text">Servizio online</span>
             </div>
             <div class="status-queue-info">
-                Coda: <span id="sidebar-queue-count">0</span> file
+                coda: <span id="sidebar-queue-count">0</span>
             </div>
         </div>
     </div>
@@ -2607,7 +2612,7 @@
                     return `<span style="font-feature-settings: 'ss${ssNum}'">${char}</span>`;
                 }).join('');
             }
-            renderFreakLogo('sidebar-logo', 'cervello');
+            renderFreakLogo('sidebar-logo', 'c');
 
             // Inizializza i controlli e listener per le performance del grafo
             initPerfUI();

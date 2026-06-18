@@ -337,6 +337,24 @@ def parse_provider_model(model_str: str) -> tuple[str, str]:
         
     return "google", model_str
 
+def is_json_response_requested(prompt: str, system_instructions: str) -> bool:
+    import re
+    sys_str = str(system_instructions or "").lower()
+    prompt_str = str(prompt or "").lower()
+    
+    if re.search(r'\bjson\b', sys_str):
+        return True
+    
+    json_phrases = ["formato json", "in json", "restituisci un json", "output json", "struttura json", "blocco json"]
+    for phrase in json_phrases:
+        if phrase in prompt_str:
+            return True
+            
+    if "```json" in prompt_str or "```json" in sys_str:
+        return True
+        
+    return False
+
 async def call_openai_compatible_api(url: str, api_key: str, model: str, system_instructions: str, prompt: str, timeout: int = 90) -> str:
     """
     Effettua una chiamata HTTP asincrona a un endpoint compatibile con OpenAI.
@@ -353,7 +371,7 @@ async def call_openai_compatible_api(url: str, api_key: str, model: str, system_
     }
     
     is_reasoning_only = "reasoner" in model or "o1" in model or "o3" in model
-    if "json" in prompt.lower() and not is_reasoning_only:
+    if is_json_response_requested(prompt, system_instructions) and not is_reasoning_only:
         payload["response_format"] = {"type": "json_object"}
 
     data = json.dumps(payload).encode("utf-8")
@@ -442,7 +460,7 @@ async def call_native_gemini_api(
         system_instruction=system_instructions,
         temperature=0.2,
     )
-    if "json" in prompt.lower():
+    if is_json_response_requested(prompt, system_instructions):
         config.response_mime_type = "application/json"
 
     max_retries = 3
