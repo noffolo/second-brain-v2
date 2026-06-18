@@ -202,6 +202,17 @@ async def run_task_subprocess_by_name(job_name: str, target_action: str):
     cmd_args = shlex.split(target_action)
     args = [python_exe, "-u", "-m", "engine.main"] + cmd_args
     
+    task_id = cmd_args[0] if cmd_args else "scheduler_task"
+    task_names = {
+        "graphify": "Rebuild Grafi",
+        "reflect": "Riflessione Periodica",
+        "dream": "Dream Mode",
+        "briefing": "Briefing Pre-Evento",
+        "ontology": "Ontology Agent"
+    }
+    task_name = task_names.get(task_id, job_name)
+    update_task_progress(task_id, task_name, 5, "Avvio compito...")
+    
     msg = f"[SCHEDULER] Avvio compito: {job_name} ({' '.join(args)})..."
     print(msg, flush=True)
     manager.write_log(msg)
@@ -221,14 +232,67 @@ async def run_task_subprocess_by_name(job_name: str, target_action: str):
             print(f"[{job_name}] {line}", flush=True)
             manager.write_log(f"[{job_name}] {line}")
             
+            # Parse progress
+            if task_id == "graphify":
+                if "AST extraction on" in line:
+                    ast_match = re.search(r"AST extraction on (\d+) code files", line, re.IGNORECASE)
+                    if ast_match:
+                        update_task_progress(task_id, task_name, 20, f"Analisi AST di {ast_match.group(1)} file...")
+                    else:
+                        update_task_progress(task_id, task_name, 20, "Analisi AST codebase...")
+                elif "semantic cache:" in line:
+                    update_task_progress(task_id, task_name, 50, "Analisi cache semantica...")
+                elif "chunk" in line and "/" in line:
+                    chunk_match = re.search(r"chunk\s+(\d+)\/(\d+)", line, re.IGNORECASE)
+                    if chunk_match:
+                        current = int(chunk_match.group(1))
+                        total = int(chunk_match.group(2))
+                        percent = 50 + int((current / total) * 45)
+                        update_task_progress(task_id, task_name, percent, f"Indicizzazione chunk: {current}/{total}")
+                elif "Grafo Wiki costruito con successo" in line:
+                    update_task_progress(task_id, task_name, 90, "Grafo Wiki completato.")
+                elif "Grafo Codebase costruito con successo" in line:
+                    update_task_progress(task_id, task_name, 95, "Grafo Codebase completato.")
+                    
+            elif task_id == "ontology":
+                if "Analisi di" in line:
+                    nodes_match = re.search(r"Analisi di (\d+) nodi", line, re.IGNORECASE)
+                    if nodes_match:
+                        update_task_progress(task_id, task_name, 30, f"Analisi di {nodes_match.group(1)} nodi...")
+                elif "Esecuzione automatica non bloccante" in line:
+                    prop_match = re.search(r"non bloccante di (\d+) proposte", line, re.IGNORECASE)
+                    if prop_match:
+                        update_task_progress(task_id, task_name, 70, f"Esecuzione di {prop_match.group(1)} proposte...")
+                elif "Ontologia applicata con successo" in line:
+                    update_task_progress(task_id, task_name, 95, "Ontologia applicata.")
+                    
+            elif task_id == "reflect":
+                if "Generazione riflessione" in line:
+                    update_task_progress(task_id, task_name, 50, "Generazione riflessione...")
+                elif "Riflessione periodica creata" in line:
+                    update_task_progress(task_id, task_name, 95, "Salvataggio...")
+                    
+            elif task_id == "dream":
+                if "Avvio sintesi" in line:
+                    update_task_progress(task_id, task_name, 40, "Sintesi concetti...")
+                elif "Collegamento" in line:
+                    update_task_progress(task_id, task_name, 70, "Analisi relazioni sogni...")
+            
         await proc.wait()
         msg_end = f"[SCHEDULER] Compito completato: {job_name} con codice {proc.returncode}"
         print(msg_end, flush=True)
         manager.write_log(msg_end)
+        
+        if proc.returncode == 0:
+            complete_task(task_id, "Completato con successo")
+        else:
+            complete_task(task_id, f"Errore (codice {proc.returncode})")
+            
     except Exception as e:
         err_msg = f"[SCHEDULER] Errore nell'esecuzione del compito {job_name}: {e}"
         print(err_msg, flush=True)
         manager.write_log(err_msg)
+        complete_task(task_id, f"Eccezione: {e}")
 
 async def run_task_subprocess(task: ScheduledTask):
     await run_task_subprocess_by_name(task.name, " ".join(task.command_args))
@@ -406,7 +470,7 @@ class IngestionManager:
                 stderr=asyncio.subprocess.STDOUT,
                 preexec_fn=os.setsid if os.name != 'nt' else None
             )
-            
+            update_task_progress("ingest", "Ingestione Fonti", 0, "Avvio sincronizzazione...")
             # Start background reader task
             asyncio.create_task(self._read_output())
             return True
@@ -426,6 +490,8 @@ class IngestionManager:
                 pass
 
     async def _read_output(self):
+        total_items = 0
+        processed_items = 0
         # Read lines asynchronously
         while self.process and self.process.stdout:
             line_bytes = await self.process.stdout.readline()
@@ -436,11 +502,42 @@ class IngestionManager:
             # Print to stdout too so it shows in server console
             print(f"[INGESTION] {line}", flush=True)
             self.write_log(f"[INGESTION] {line}")
+            
+            # Parse progress
+            ingest_total_match = re.search(r"Trovate\s+(\d+)\s+email\s+mancanti", line, re.IGNORECASE)
+            if ingest_total_match:
+                total_items = int(ingest_total_match.group(1))
+                processed_items = 0
+                if total_items > 0:
+                    update_task_progress("ingest", "Ingestione Fonti", 0, f"Sincronizzazione mail: 0/{total_items}")
+                    
+            if "Completata elaborazione per:" in line or "Post-filtro: Saltato" in line:
+                processed_items += 1
+                if total_items > 0:
+                    percent = min(100, int((processed_items / total_items) * 100))
+                    update_task_progress("ingest", "Ingestione Fonti", percent, f"Sincronizzazione mail: {processed_items}/{total_items}")
+                    
+            if "Sincronizzazione completata:" in line:
+                update_task_progress("ingest", "Ingestione Fonti", 95, "Salvataggio e pulizia CRM...")
                 
         # Clean up process reference when complete
+        exit_code = 0
+        if self.process:
+            try:
+                exit_code = self.process.returncode
+                if exit_code is None:
+                    exit_code = await self.process.wait()
+            except Exception:
+                pass
+                
         async with self.lock:
             self.process = None
             self.active_source = "none"
+            
+        if exit_code == 0:
+            complete_task("ingest", "Ingestione completata con successo")
+        else:
+            complete_task("ingest", f"Errore (codice {exit_code})")
 
     async def stop(self) -> bool:
         async with self.lock:
@@ -471,6 +568,7 @@ class IngestionManager:
             finally:
                 self.process = None
                 self.active_source = "none"
+                complete_task("ingest", "Ingestione arrestata dall'utente")
             return True
 
     def is_running(self) -> bool:
@@ -486,6 +584,32 @@ class IngestionManager:
             self.listeners.remove(q)
 
 manager = IngestionManager()
+
+# --- Active background tasks tracking ---
+active_tasks = {} # task_id -> {"id": str, "name": str, "progress": int, "message": str, "updated_at": float}
+
+def update_task_progress(task_id: str, name: str, progress: int, message: str):
+    import time
+    active_tasks[task_id] = {
+        "id": task_id,
+        "name": name,
+        "progress": progress,
+        "message": message,
+        "updated_at": time.time()
+    }
+    progress_line = f"[PROGRESS] [{task_id}] [{name}] {progress}% - {message}"
+    manager.write_log(progress_line)
+
+def complete_task(task_id: str, message: str = "Completato"):
+    if task_id in active_tasks:
+        name = active_tasks[task_id]["name"]
+        update_task_progress(task_id, name, 100, message)
+        
+        async def remove_after_delay():
+            await asyncio.sleep(5.0)
+            active_tasks.pop(task_id, None)
+            
+        asyncio.create_task(remove_after_delay())
 
 # --- Helper Functions for Settings ---
 def get_schedule_time() -> str:
@@ -947,7 +1071,8 @@ def get_status():
         "queue_preview": unprocessed[:10],
         "log_history": manager.log_history,
         "log_tail": log_tail,
-        "schedule_time": get_schedule_time()
+        "schedule_time": get_schedule_time(),
+        "active_tasks": list(active_tasks.values())
     }
 
 @app.post("/api/ingest/start")
@@ -1666,6 +1791,16 @@ async def run_admin_task_subprocess(name: str, command_args: list[str]):
         python_exe = sys.executable
         
     args = [python_exe, "-u", "-m", "engine.main"] + command_args
+    
+    task_id = command_args[0] if command_args else "admin_task"
+    task_names = {
+        "ontology": "Ontology Agent",
+        "graphify": "Rebuild Grafi",
+        "ingest": "Ingestione Fonti"
+    }
+    task_name = task_names.get(task_id, name)
+    update_task_progress(task_id, task_name, 5, "Avvio compito...")
+    
     manager.write_log(f"[ADMIN] Avvio compito: {name}...")
     try:
         proc = await asyncio.create_subprocess_exec(
@@ -1682,10 +1817,30 @@ async def run_admin_task_subprocess(name: str, command_args: list[str]):
             line = line_bytes.decode("utf-8", errors="ignore").strip()
             manager.write_log(f"[{name}] {line}")
             
+            # Parse progress
+            if task_id == "ontology":
+                if "Analisi di" in line:
+                    nodes_match = re.search(r"Analisi di (\d+) nodi", line, re.IGNORECASE)
+                    if nodes_match:
+                        update_task_progress(task_id, task_name, 30, f"Analisi di {nodes_match.group(1)} nodi...")
+                elif "Esecuzione automatica non bloccante" in line:
+                    prop_match = re.search(r"non bloccante di (\d+) proposte", line, re.IGNORECASE)
+                    if prop_match:
+                        update_task_progress(task_id, task_name, 70, f"Esecuzione di {prop_match.group(1)} proposte...")
+                elif "Ontologia applicata con successo" in line:
+                    update_task_progress(task_id, task_name, 95, "Ontologia applicata.")
+                    
         await proc.wait()
         manager.write_log(f"[ADMIN] Compito completato: {name} con codice {proc.returncode}")
+        
+        if proc.returncode == 0:
+            complete_task(task_id, "Completato con successo")
+        else:
+            complete_task(task_id, f"Errore (codice {proc.returncode})")
+            
     except Exception as e:
         manager.write_log(f"[ADMIN] Errore nell'esecuzione di {name}: {e}")
+        complete_task(task_id, f"Eccezione: {e}")
 
     # Mount the MCP server's SSE application to FastAPI app at /mcp
     app.mount("/mcp", mcp_server.sse_app())

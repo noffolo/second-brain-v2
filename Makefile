@@ -54,7 +54,17 @@ else
 endif
 
 dashboard:
-	$(PYTHON) -m uvicorn engine.dashboard:app --reload --port 8000
+	$(PYTHON) -m uvicorn engine.dashboard:app --reload --port 8000 \
+		--reload-exclude "wiki/*" \
+		--reload-exclude "Meetings/*" \
+		--reload-exclude "journal/*" \
+		--reload-exclude "CRM/*" \
+		--reload-exclude "People/*" \
+		--reload-exclude "raw/*" \
+		--reload-exclude "graphify-out/*" \
+		--reload-exclude "*.json" \
+		--reload-exclude "*.db*" \
+		--reload-exclude "*.lock"
 
 graphify:
 	$(PYTHON) -m engine.main graphify

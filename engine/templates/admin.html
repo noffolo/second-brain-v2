@@ -1090,11 +1090,8 @@
                         <span class="card-title" style="color: var(--accent-cyan);">📟 Streaming Log di Sistema (SSE)</span>
                         <button class="btn btn-secondary btn-sm" id="btn-clear-logs">Pulisci Log</button>
                     </div>
-                    <!-- Contenitore Barra di Avanzamento -->
-                    <div id="progress-bar-container" style="display: none; margin-bottom: 15px; border: 2px solid #000000; box-shadow: -3px 3px 0 #000000; padding: 4px; background: #ffffff; position: relative; height: 32px; box-sizing: border-box;">
-                        <div id="progress-bar-fill" style="background: var(--accent-cyan, #B6D713); width: 0%; height: 100%; transition: width 0.3s ease;"></div>
-                        <span id="progress-bar-text" style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 24px; font-family: var(--font-family-body); font-size: 0.85rem; font-weight: 600; text-transform: lowercase; color: #000000; z-index: 2;">avanzamento: 0%</span>
-                    </div>
+                    <!-- Contenitore Barre di Avanzamento Dinamiche -->
+                    <div id="progress-bars-container" style="margin-bottom: 15px; display: flex; flex-direction: column; gap: 8px;"></div>
                     <div class="terminal-container" id="terminal-logs">
                         <!-- Log lines populated here -->
                     </div>
@@ -1312,24 +1309,74 @@
         }
 
         // --- Status and Real-time SSE Logs ---
-        let totalItems = 0;
-        let processedItems = 0;
+        function updateProgressBar(taskId, taskName, percent, text) {
+            const container = document.getElementById('progress-bars-container');
+            if (!container) return;
 
-        function showProgressBar(percent, text) {
-            const container = document.getElementById('progress-bar-container');
-            const fill = document.getElementById('progress-bar-fill');
-            const label = document.getElementById('progress-bar-text');
-            if (container && fill && label) {
-                container.style.display = 'block';
-                fill.style.width = percent + '%';
-                label.innerText = text;
+            let barContainer = document.getElementById(`progress-bar-${taskId}`);
+            if (!barContainer) {
+                barContainer = document.createElement('div');
+                barContainer.id = `progress-bar-${taskId}`;
+                barContainer.style.cssText = "margin-bottom: 0px; border: 2px solid #000000; box-shadow: -3px 3px 0 #000000; padding: 4px; background: #ffffff; position: relative; height: 32px; box-sizing: border-box;";
+                
+                const barFill = document.createElement('div');
+                barFill.id = `progress-fill-${taskId}`;
+                
+                let fillColor = "var(--accent-cyan, #B6D713)";
+                if (taskId === "ingest") fillColor = "var(--accent-cyan, #B6D713)";
+                else if (taskId === "graphify") fillColor = "var(--accent-purple, #9d4edd)";
+                else if (taskId === "ontology") fillColor = "var(--accent-green, #2ecc71)";
+                else if (taskId === "reflect") fillColor = "var(--accent-red, #ff5a5f)";
+                
+                barFill.style.cssText = `background: ${fillColor}; width: 0%; height: 100%; transition: width 0.3s ease;`;
+                
+                const barText = document.createElement('span');
+                barText.id = `progress-text-${taskId}`;
+                barText.style.cssText = "position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 20px; font-family: Outfit, sans-serif; font-size: 0.85rem; font-weight: 600; text-transform: lowercase; color: #000000; z-index: 2;";
+                
+                barContainer.appendChild(barFill);
+                barContainer.appendChild(barText);
+                container.appendChild(barContainer);
             }
-        }
 
-        function hideProgressBar() {
-            const container = document.getElementById('progress-bar-container');
-            if (container) {
-                container.style.display = 'none';
+            const fill = document.getElementById(`progress-fill-${taskId}`);
+            const label = document.getElementById(`progress-text-${taskId}`);
+            if (fill && label) {
+                fill.style.width = percent + '%';
+                label.innerText = `${taskName}: ${percent}% - ${text}`;
+                
+                if (text.toLowerCase().includes('err') || text.toLowerCase().includes('fail')) {
+                    fill.style.background = "var(--accent-red, #ff5a5f)";
+                    if (!barContainer._removeTimeout) {
+                        barContainer._removeTimeout = setTimeout(() => {
+                            barContainer.remove();
+                        }, 8000);
+                    }
+                    return;
+                }
+            }
+
+            // Reset color if it was red and now is fine (e.g. on restart)
+            if (fill && !text.toLowerCase().includes('err') && !text.toLowerCase().includes('fail')) {
+                let fillColor = "var(--accent-cyan, #B6D713)";
+                if (taskId === "ingest") fillColor = "var(--accent-cyan, #B6D713)";
+                else if (taskId === "graphify") fillColor = "var(--accent-purple, #9d4edd)";
+                else if (taskId === "ontology") fillColor = "var(--accent-green, #2ecc71)";
+                else if (taskId === "reflect") fillColor = "var(--accent-red, #ff5a5f)";
+                fill.style.background = fillColor;
+            }
+
+            if (percent >= 100) {
+                if (!barContainer._removeTimeout) {
+                    barContainer._removeTimeout = setTimeout(() => {
+                        barContainer.remove();
+                    }, 5000);
+                }
+            } else {
+                if (barContainer._removeTimeout) {
+                    clearTimeout(barContainer._removeTimeout);
+                    barContainer._removeTimeout = null;
+                }
             }
         }
 
@@ -1346,37 +1393,17 @@
                 
                 const line = event.data;
                 
-                // Parse Graphify progress
-                const graphifyMatch = line.match(/chunk\s+(\d+)\/(\d+)/i);
-                if (graphifyMatch) {
-                    const current = parseInt(graphifyMatch[1], 10);
-                    const total = parseInt(graphifyMatch[2], 10);
-                    const percent = Math.round((current / total) * 100);
-                    showProgressBar(percent, `indicizzazione grafo: ${current}/${total} (${percent}%)`);
-                }
-
-                // Parse Ingestion mail total
-                const ingestTotalMatch = line.match(/Trovate\s+(\d+)\s+email\s+mancanti/i);
-                if (ingestTotalMatch) {
-                    totalItems = parseInt(ingestTotalMatch[1], 10);
-                    processedItems = 0;
-                    if (totalItems > 0) {
-                        showProgressBar(0, `sincronizzazione mail: 0/${totalItems} (0%)`);
+                // Intercetta i log speciali [PROGRESS]
+                if (line.startsWith('[PROGRESS]')) {
+                    const match = line.match(/^\[PROGRESS\]\s+\[([^\]]+)\]\s+\[([^\]]+)\]\s+(\d+)%\s+-\s+(.*)$/);
+                    if (match) {
+                        const taskId = match[1];
+                        const taskName = match[2];
+                        const percent = parseInt(match[3], 10);
+                        const text = match[4];
+                        updateProgressBar(taskId, taskName, percent, text);
+                        return; // Salta l'aggiunta al terminale
                     }
-                }
-
-                // Parse Ingestion completed file
-                if (line.includes('Completata elaborazione per:') || line.includes('Post-filtro: Saltato')) {
-                    processedItems++;
-                    if (totalItems > 0) {
-                        const percent = Math.min(100, Math.round((processedItems / totalItems) * 100));
-                        showProgressBar(percent, `sincronizzazione mail: ${processedItems}/${totalItems} (${percent}%)`);
-                    }
-                }
-
-                // Hide progress bar on completion
-                if (line.includes('Sincronizzazione completata') || line.includes('Completata elaborazione:') || line.includes('Grafo Wiki costruito con successo') || line.includes('Ontologia applicata con successo')) {
-                    setTimeout(hideProgressBar, 5000);
                 }
 
                 const lineDiv = document.createElement('div');
@@ -1417,6 +1444,25 @@
                 const data = await res.json();
                 
                 document.getElementById('queue-count').innerText = data.queue_count;
+                
+                // Aggiorna o crea le barre di avanzamento dinamiche basate sui task attivi nel backend
+                const activeTaskIds = new Set();
+                if (data.active_tasks) {
+                    data.active_tasks.forEach(task => {
+                        activeTaskIds.add(task.id);
+                        updateProgressBar(task.id, task.name, task.progress, task.message);
+                    });
+                }
+                
+                // Rimuove le barre di avanzamento per i task che non sono più attivi sul backend
+                document.querySelectorAll('[id^="progress-bar-"]').forEach(barEl => {
+                    const taskId = barEl.id.replace('progress-bar-', '');
+                    if (!activeTaskIds.has(taskId)) {
+                        if (!barEl._removeTimeout) {
+                            barEl.remove();
+                        }
+                    }
+                });
                 
                 // Update button visibility
                 if (data.running) {
