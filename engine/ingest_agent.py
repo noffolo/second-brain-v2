@@ -749,7 +749,8 @@ async def run_ingest(dry_run: bool = False, source_filter: str = None):
     aliases_map = load_aliases_map(vault_path)
     print(f"Indice alias caricato con successo ({len(aliases_map)} chiavi).")
         
-    model = settings.get("models", {}).get("ingest_agent", "gemini-3.5-flash")
+    model_cfg = settings.get("models", {}).get("ingest_agent", "gemini-3.5-flash")
+    model = model_cfg.get("primary", "gemini-3.5-flash") if isinstance(model_cfg, dict) else model_cfg or "gemini-3.5-flash"
     instructions = get_agent_instructions("Ingest Agent")
     
     auth = settings.get("google_auth", {})

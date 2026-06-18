@@ -142,7 +142,8 @@ async def run_briefing_daemon():
         return
         
     # 2. Configura il modello
-    model = settings.get("models", {}).get("query_agent", "gemini-3.5-flash")
+    model_cfg = settings.get("models", {}).get("query_agent", "gemini-3.5-flash")
+    model = model_cfg.get("primary", "gemini-3.5-flash") if isinstance(model_cfg, dict) else model_cfg or "gemini-3.5-flash"
     auth = settings.get("google_auth", {})
     kwargs = {}
     if auth.get("use_vertex", False):

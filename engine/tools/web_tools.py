@@ -131,7 +131,8 @@ async def web_sync_to_raw() -> int:
     os.makedirs(dest_dir, exist_ok=True)
     
     # Configura l'agente per l'elaborazione del testo
-    model = settings.get("models", {}).get("ingest_agent", "gemini-3.5-flash")
+    model_cfg = settings.get("models", {}).get("ingest_agent", "gemini-3.5-flash")
+    model = model_cfg.get("primary", "gemini-3.5-flash") if isinstance(model_cfg, dict) else model_cfg or "gemini-3.5-flash"
     auth = settings.get("google_auth", {})
     kwargs = {}
     if auth.get("use_vertex", False):

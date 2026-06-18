@@ -78,7 +78,8 @@ def get_recent_files(directory_path: str, max_files: int = 5, max_days: int = 7)
 async def run_reflection():
     vault_path = get_vault_path()
     settings = load_settings(vault_path)
-    model = settings.get("models", {}).get("reflect_agent", "gemini-3.5-flash")
+    model_cfg = settings.get("models", {}).get("reflect_agent", "gemini-3.5-flash")
+    model = model_cfg.get("primary", "gemini-3.5-flash") if isinstance(model_cfg, dict) else model_cfg or "gemini-3.5-flash"
     identity_inst = get_agent_instructions("Identity (Linee Guida Generali)")
     specific_inst = get_agent_instructions("Reflect Agent")
     instructions = f"{identity_inst}\n\n---\n\n{specific_inst}"
