@@ -705,6 +705,10 @@
         .brand-tag {
             display: none !important; /* Nasconde il tag ADMIN */
         }
+        
+        #sidebar-logo {
+            font-feature-settings: "ss08" !important;
+        }
 
         .sidebar-menu {
             padding: 24px 8px !important;
@@ -1017,7 +1021,7 @@
     <div class="sidebar">
         <div>
             <div class="sidebar-brand">
-                <span class="brand-title" id="sidebar-logo">c</span>
+                <span class="brand-title" id="sidebar-logo">a</span>
                 <span class="brand-tag">ADMIN</span>
             </div>
             
@@ -1279,7 +1283,7 @@
         
         // Execute logo rendering
         document.addEventListener('DOMContentLoaded', () => {
-            renderFreakLogo('sidebar-logo', 'cervello');
+            // Il logo usa il glifo Jolly Roger ('a' + ss08) via CSS
         });
 
         // State variables

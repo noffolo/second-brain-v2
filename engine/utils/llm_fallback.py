@@ -4,8 +4,11 @@ import ssl
 import urllib.request
 import urllib.error
 import asyncio
+import contextvars
 from google.antigravity import Agent, LocalAgentConfig
 from google.antigravity.types import CapabilitiesConfig
+
+current_agent_name = contextvars.ContextVar("current_agent_name", default=None)
 
 try:
     ssl_context = ssl._create_unverified_context()
@@ -337,22 +340,47 @@ def parse_provider_model(model_str: str) -> tuple[str, str]:
         
     return "google", model_str
 
-def is_json_response_requested(prompt: str, system_instructions: str) -> bool:
+def is_json_response_requested(prompt: str, system_instructions: str, agent_name: str = None) -> bool:
     import re
+    if agent_name is None:
+        agent_name = current_agent_name.get()
+        
+    # Se l'agente è uno di quelli che producono specificamente JSON, ritorna sempre True
+    if agent_name in ["ontology_agent", "ingest_agent"]:
+        return True
+        
+    # Se l'agente è un agente testuale (chat/diario/riflessioni), non forziamo mai il formato JSON
+    # a meno che il prompt non richieda esplicitamente un formato JSON (escludendo nomi di file come .json)
     sys_str = str(system_instructions or "").lower()
     prompt_str = str(prompt or "").lower()
     
-    if re.search(r'\bjson\b', sys_str):
-        return True
+    # Rimuove pattern di file path o nomi file tipo "graph.json" o "xxx.json" nel prompt
+    clean_prompt = re.sub(r'[\w\-]+\.json\b', '', prompt_str)
     
-    json_phrases = ["formato json", "in json", "restituisci un json", "output json", "struttura json", "blocco json"]
-    for phrase in json_phrases:
-        if phrase in prompt_str:
+    # Controlla se c'è un riferimento esplicito a JSON nel prompt ripulito
+    if re.search(r'\bjson\b', clean_prompt):
+        # Cerca indicatori che indicano una richiesta di formato di output
+        json_indicators = [
+            "formato json", "in json", "restituisci un json", 
+            "output json", "struttura json", "blocco json", 
+            "dammi il json", "genera json", "come json"
+        ]
+        if any(ind in clean_prompt for ind in json_indicators):
             return True
             
-    if "```json" in prompt_str or "```json" in sys_str:
+    if "```json" in clean_prompt:
         return True
         
+    # Per motivi di sicurezza/fallback se l'agente non è noto, controlliamo le istruzioni di sistema.
+    # Tuttavia, non lo facciamo se l'agente è esplicitamente query_agent, reflect_agent, briefing_agent o dream_agent
+    if agent_name not in ["query_agent", "reflect_agent", "briefing_agent", "dream_agent"]:
+        # Se le istruzioni contengono direttive molto forti per l'output JSON
+        if "genera esclusivamente un blocco json" in sys_str or "impostalo come rumore" in sys_str:
+            return True
+        # Se c'è la parola JSON da sola nelle istruzioni di sistema (escluso query_agent)
+        if re.search(r'\bjson\b', sys_str) and not any(x in sys_str for x in ["query agent", "secondo cervello"]):
+            return True
+            
     return False
 
 async def call_openai_compatible_api(url: str, api_key: str, model: str, system_instructions: str, prompt: str, timeout: int = 90) -> str:
@@ -562,8 +590,17 @@ def format_worst_case_fallback(prompt: str, errors: list) -> str:
 async def call_llm_with_fallback(prompt: str, system_instructions: str, gemini_config: LocalAgentConfig, agent_name: str = None) -> str:
     """
     Interroga i modelli dell'agente configurati in settings.md seguendo la catena di fallback specifica.
-    Se fallisce la catena configurata, interroga Free4All per chiavi attive e le testa in tempo reale,
-    salvandole in caso di successo.
+    """
+    agent_key = agent_name or "query_agent"
+    token = current_agent_name.set(agent_key)
+    try:
+        return await _call_llm_with_fallback_impl(prompt, system_instructions, gemini_config, agent_name)
+    finally:
+        current_agent_name.reset(token)
+
+async def _call_llm_with_fallback_impl(prompt: str, system_instructions: str, gemini_config: LocalAgentConfig, agent_name: str = None) -> str:
+    """
+    Implementazione interna dell'interrogazione dei modelli dell'agente seguendo la catena di fallback specifica.
     """
     
     # 1. Carica le impostazioni di configurazione

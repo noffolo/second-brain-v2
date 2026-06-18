@@ -1510,6 +1510,7 @@
         
         .sidebar-brand .circled-text {
             display: inline-block !important;
+            font-feature-settings: "ss08" !important;
         }
 
         .sidebar-menu {
@@ -1920,7 +1921,7 @@
     <!-- LEFT SIDEBAR -->
     <div class="sidebar">
         <div class="sidebar-brand">
-            <span class="circled-text" id="sidebar-logo">c</span>
+            <span class="circled-text" id="sidebar-logo">a</span>
         </div>
         
         <div class="sidebar-menu">
@@ -2612,7 +2613,7 @@
                     return `<span style="font-feature-settings: 'ss${ssNum}'">${char}</span>`;
                 }).join('');
             }
-            renderFreakLogo('sidebar-logo', 'c');
+            // Il logo usa il glifo Jolly Roger ('a' + ss08) via CSS
 
             // Inizializza i controlli e listener per le performance del grafo
             initPerfUI();
