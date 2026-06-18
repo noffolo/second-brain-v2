@@ -1,0 +1,137 @@
+[
+  {
+    "id": "M1",
+    "type": "merge",
+    "source": "wiki/concepts/AI_LLM_Coding/Cold outreach AI (Advertising Intelligence)",
+    "target": "wiki/concepts/AI_LLM_Coding/Cold Outreach AI",
+    "reason": "Titolo e argomento identici, con la nota sorgente che include una specificazione tra parentesi non necessaria per un concetto distinto.",
+    "timestamp": "2026-06-18 11:54:01",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M2",
+    "type": "merge",
+    "source": "wiki/entities/AI_LLM_Coding/Amazon EU Sarl",
+    "target": "wiki/entities/General/Amazon EU S.a.r.l.",
+    "reason": "Stessa entità legale con variazione ortografica nell'abbreviazione societaria (Sarl vs S.a.r.l.); unifica sotto il nome più formalmente corretto.",
+    "timestamp": "2026-06-18 11:54:04",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M3",
+    "type": "merge",
+    "source": "wiki/concepts/AI_LLM_Coding/Smart Building Expo",
+    "target": "wiki/entities/General/Smart Building Expo",
+    "reason": "Stessa entità (fiera/esposizione) mappata erroneamente sia come concetto che come entità; mantiene la corretta natura di entità.",
+    "timestamp": "2026-06-18 11:54:08",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M4",
+    "type": "merge",
+    "source": "wiki/entities/AI_LLM_Coding/Viacom International Inc",
+    "target": "wiki/entities/AI_LLM_Coding/Viacom International Inc.",
+    "reason": "Duplicato della stessa entità con minima variazione nell'uso del punto finale nell'abbreviazione societaria.",
+    "timestamp": "2026-06-18 11:54:11",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M5",
+    "type": "merge",
+    "source": "wiki/entities/Design_Branding/Editions B42",
+    "target": "wiki/entities/Design_Branding/Éditions B42",
+    "reason": "Stessa casa editrice, con il solo accento mancante nella versione sorgente.",
+    "timestamp": "2026-06-18 11:54:14",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M6",
+    "type": "merge",
+    "source": "wiki/entities/General/Lecce",
+    "target": "wiki/entities/General/[Lecce]",
+    "reason": "Probabile duplicato della stessa entità geografica dove il target ha una notazione tra parentesi quadre che dovrebbe essere normalizzata.",
+    "timestamp": "2026-06-18 11:54:17",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M7",
+    "type": "merge",
+    "source": "wiki/entities/AI_LLM_Coding/FreeStyle Libre",
+    "target": "wiki/entities/General/FreeStyle Libre 3",
+    "reason": "La versione 3 è un'iterazione specifica dello stesso dispositivo medico; la fusione collega il concetto generale al prodotto concreto.",
+    "timestamp": "2026-06-18 11:54:21",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M8",
+    "type": "merge",
+    "source": "wiki/entities/Design_Branding/Daniele Caluri",
+    "target": "wiki/entities/FF3300/USB/Daniele",
+    "reason": "Daniele Caluri è un'entità persona; 'Daniele' è un riferimento astratto che va risolto nell'entità completa per evitare frammentazione.",
+    "timestamp": "2026-06-18 11:54:24",
+    "status": "applied_auto"
+  },
+  {
+    "id": "M9",
+    "type": "merge",
+    "source": "wiki/entities/General/Facebook",
+    "target": "wiki/entities/Facebook",
+    "reason": "Duplicato dell'entità piattaforma social, da unificare in un unico percorso principale.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  },
+  {
+    "id": "H1",
+    "type": "hierarchy",
+    "parent": "wiki/concepts/AI_LLM_Coding/AI generativa",
+    "child": "wiki/concepts/AI_LLM_Coding/AI generativa nella cybersecurity",
+    "reason": "L'applicazione specifica alla cybersecurity è una specializzazione del concetto più ampio di AI generativa.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  },
+  {
+    "id": "H2",
+    "type": "hierarchy",
+    "parent": "wiki/concepts/General/E-commerce",
+    "child": "wiki/concepts/General/Gestione dei pagamenti su piattaforme e-commerce",
+    "reason": "La gestione dei pagamenti è una sottocategoria operativa dell'e-commerce.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  },
+  {
+    "id": "H3",
+    "type": "hierarchy",
+    "parent": "wiki/entities/General/PayPal",
+    "child": "wiki/concepts/General/Conversione di valuta PayPal",
+    "reason": "La conversione di valuta è una funzionalità specifica offerta dall'entità piattaforma PayPal.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  },
+  {
+    "id": "H4",
+    "type": "hierarchy",
+    "parent": "wiki/concepts/AI_LLM_Coding/Email Marketing Automation",
+    "child": "wiki/concepts/AI_LLM_Coding/Email marketing automation con link tracking",
+    "reason": "Il link tracking è una feature specifica che estende il concetto di base di automazione dell'email marketing.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  },
+  {
+    "id": "L1",
+    "type": "link",
+    "source": "wiki/concepts/General/PNRR (Programma Nazionale Ripresa e Resilienza)",
+    "target": "wiki/concepts/General/PNRR (Programma Nazionale di Rinnovamento del Ruralità)",
+    "reason": "Entrambi rappresentano concetti correlati nell'ambito della programmazione nazionale, sebbene con accezioni diverse, e dovrebbero essere collegati per navigazione tematica.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  },
+  {
+    "id": "L2",
+    "type": "link",
+    "source": "wiki/entities/General/Stefano",
+    "target": "wiki/entities/General/Stefano Ardito",
+    "reason": "Collegamento necessario per risolvere l'entità generica 'Stefano' nell'individuo specifico noto nel contesto del Secondo Cervello.",
+    "timestamp": "2026-06-18 11:54:28",
+    "status": "applied_auto"
+  }
+]

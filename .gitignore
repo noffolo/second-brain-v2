@@ -1,0 +1,48 @@
+.env
+.obsidian/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+*.log
+.DS_Store
+**/.DS_Store
+build/
+dist/
+*.egg-info/
+engine/processed_files.json
+
+# User-specific active data files
+log.md
+user_profile.md
+chat.md
+index.md
+
+# Ignore all user vault data and scratch scripts
+wiki/
+CRM/
+journal/
+Meetings/
+People/
+Microthemes/
+raw/
+scratch/
+archived_noise/
+# Ignore WhatsApp syncer auth state
+engine/tools/whatsapp_syncer/auth_session/
+
+# Ignore local generated database and cache
+vault/graph_cache.json
+vault/vector_store/
+
+# Ignore Graphify generated graphs and caches
+**/graphify-out/
+graphify-out/
+
+# Database files
+*.db
+engine/*.db

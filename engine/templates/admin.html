@@ -1,0 +1,2313 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secondo Cervello - Console Amministrazione</title>
+    
+    <!-- Modern Web Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- CSS Dashboard Layout and Styling -->
+    <style>
+        :root {
+            --bg-color: #07080b;
+            --panel-bg: rgba(20, 24, 33, 0.65);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --accent-purple: #9d4edd;
+            --accent-purple-glow: rgba(157, 78, 221, 0.4);
+            --accent-cyan: #00f5d4;
+            --accent-cyan-glow: rgba(0, 245, 212, 0.3);
+            --accent-red: #ff5a5f;
+            --accent-red-glow: rgba(255, 90, 95, 0.3);
+            --accent-green: #2ecc71;
+            --accent-green-glow: rgba(46, 204, 113, 0.3);
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --text-muted: #6c757d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glowing Backgrounds */
+        body::before, body::after {
+            content: '';
+            position: absolute;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            filter: blur(160px);
+            z-index: -1;
+            opacity: 0.12;
+            pointer-events: none;
+        }
+        body::before {
+            background-color: var(--accent-purple);
+            top: -100px;
+            right: -100px;
+        }
+        body::after {
+            background-color: var(--accent-cyan);
+            bottom: -100px;
+            left: -100px;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            background: rgba(13, 17, 24, 0.85);
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            z-index: 10;
+            backdrop-filter: blur(20px);
+        }
+
+        .sidebar-brand {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, #fff 0%, #adb5bd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-tag {
+            font-size: 0.7rem;
+            background: rgba(157, 78, 221, 0.2);
+            color: var(--accent-purple);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            border: 1px solid rgba(157, 78, 221, 0.3);
+        }
+
+        .sidebar-menu {
+            flex-grow: 1;
+            padding: 24px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            cursor: pointer;
+        }
+
+        .sidebar-item svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2;
+            stroke: currentColor;
+            fill: none;
+            transition: transform 0.25s ease;
+        }
+
+        .sidebar-item:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sidebar-item:hover svg {
+            transform: translateX(2px);
+        }
+
+        .sidebar-item.active {
+            color: var(--text-primary);
+            background: rgba(157, 78, 221, 0.12);
+            border-color: rgba(157, 78, 221, 0.25);
+            box-shadow: 0 4px 20px rgba(157, 78, 221, 0.05);
+        }
+
+        .sidebar-item.active svg {
+            stroke: var(--accent-purple);
+        }
+
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-green-glow);
+            animation: pulse 2s infinite;
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(7, 8, 11, 0.4) 0%, rgba(13, 17, 24, 0.4) 100%);
+        }
+
+        .main-header {
+            height: 70px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn-view-client {
+            padding: 8px 16px;
+            background: transparent;
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 245, 212, 0.2);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.25s ease;
+        }
+
+        .btn-view-client:hover {
+            background: rgba(0, 245, 212, 0.08);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 15px var(--accent-cyan-glow);
+        }
+
+        .tab-content {
+            flex-grow: 1;
+            padding: 32px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .tab-pane {
+            display: none;
+            animation: fadeIn 0.35s ease;
+            height: 100%;
+        }
+
+        .tab-pane.active {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* CARD AND GRIDS */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .panel-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 24px;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            transition: border-color 0.3s ease;
+        }
+
+        .panel-card:hover {
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* BUTTONS & FORMS */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid transparent;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent-purple);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(157, 78, 221, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #b5179e;
+            box-shadow: 0 4px 20px var(--accent-purple-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border-color: var(--panel-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-danger {
+            background: rgba(255, 90, 95, 0.15);
+            color: var(--accent-red);
+            border-color: rgba(255, 90, 95, 0.25);
+        }
+
+        .btn-danger:hover {
+            background: var(--accent-red);
+            color: #fff;
+            box-shadow: 0 4px 15px var(--accent-red-glow);
+        }
+
+        .btn-success {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--accent-green);
+            border-color: rgba(46, 204, 113, 0.25);
+        }
+
+        .btn-success:hover {
+            background: var(--accent-green);
+            color: #fff;
+            box-shadow: 0 4px 15px var(--accent-green-glow);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            border-radius: 4px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .form-control {
+            background: rgba(13, 17, 24, 0.5);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            transition: all 0.25s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px rgba(157, 78, 221, 0.2);
+            background: rgba(13, 17, 24, 0.8);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        /* MONOSPACE CODE EDITOR STYLE */
+        .editor-textarea {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            background: #0d0f12;
+            border-color: rgba(255, 255, 255, 0.05);
+            height: 480px;
+        }
+
+        /* TOGGLE SWITCH */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .3s;
+            border-radius: 24px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: var(--text-secondary);
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: rgba(157, 78, 221, 0.25);
+            border-color: var(--accent-purple);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+            background-color: var(--accent-purple);
+            box-shadow: 0 0 8px var(--accent-purple-glow);
+        }
+
+        /* LOG TERMINAL */
+        .terminal-container {
+            flex-grow: 1;
+            background: #090b0e;
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #a9b2c3;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            height: 350px;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .log-line {
+            white-space: pre-wrap;
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .log-scheduler { color: var(--accent-cyan); }
+        .log-ingestion { color: var(--text-primary); }
+        .log-admin { color: var(--accent-purple); }
+        .log-error { color: var(--accent-red); font-weight: bold; }
+
+        /* ONTOLOGY GRID & TABLE */
+        .proposal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+
+        .proposal-table th, .proposal-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .proposal-table th {
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .proposal-table tbody tr:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .proposal-badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .badge-merge { background: rgba(157, 78, 221, 0.15); color: var(--accent-purple); border: 1px solid rgba(157, 78, 221, 0.25); }
+        .badge-hierarchy { background: rgba(0, 245, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(0, 245, 212, 0.25); }
+        .badge-link { background: rgba(46, 204, 113, 0.15); color: var(--accent-green); border: 1px solid rgba(46, 204, 113, 0.25); }
+
+        .status-pill {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-applied { background: rgba(46, 204, 113, 0.12); color: var(--accent-green); }
+        .status-rolled { background: rgba(255, 90, 95, 0.12); color: var(--accent-red); }
+        .status-confirmed { background: rgba(255, 255, 255, 0.08); color: var(--text-secondary); }
+
+        /* PROMPT SUBTABS */
+        .prompt-subtabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+        }
+
+        .prompt-subtab {
+            padding: 8px 16px;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .prompt-subtab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .prompt-subtab.active {
+            color: var(--accent-purple);
+            background: rgba(157, 78, 221, 0.1);
+            border-color: rgba(157, 78, 221, 0.2);
+        }
+
+        /* ANIMATIONS */
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 8px rgba(46, 204, 113, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* DRAG AND DROP ZONE */
+        .drag-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.01);
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .drag-zone:hover {
+            border-color: var(--accent-purple);
+            background: rgba(157, 78, 221, 0.02);
+        }
+
+        .drag-zone p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        .drag-zone svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--text-muted);
+            fill: none;
+            stroke-width: 2;
+        }
+
+        /* ==========================================================================
+           LA SCUOLA OPEN SOURCE DESIGN SYSTEM OVERRIDES
+           ========================================================================== */
+        @import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+
+        @font-face {
+            font-family: 'freakgrotesk';
+            src: url('/fonts/FREAKGrotesk-next.otf') format('opentype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --bg-color: #ffffff;
+            --panel-bg: #ffffff;
+            --panel-border: #000000;
+            --accent-purple: #9157f3;
+            --accent-purple-glow: rgba(145, 87, 243, 0.3);
+            --accent-cyan: #B6D713;
+            --accent-cyan-glow: rgba(182, 215, 19, 0.3);
+            --accent-red: #ff5a5f;
+            --accent-red-glow: rgba(255, 90, 95, 0.3);
+            --accent-green: #2ecc71;
+            --text-primary: #000000;
+            --text-secondary: #000000;
+            --text-muted: #555555;
+            
+            --font-family-body: 'Instrument Sans', sans-serif;
+            --font-family-display: 'freakgrotesk', sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family-body) !important;
+            background-color: var(--bg-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        body::before, body::after {
+            display: none !important;
+        }
+
+        /* LOGO IN FREAKGROTESK */
+        .brand-title {
+            font-family: var(--font-family-display) !important;
+            font-weight: 400 !important;
+            text-transform: none !important;
+            letter-spacing: -0.01em !important;
+            font-size: 2rem !important;
+            background: none !important;
+            -webkit-background-clip: initial !important;
+            -webkit-text-fill-color: initial !important;
+            color: #ffffff !important;
+        }
+
+        .brand-tag {
+            border-radius: 0 !important;
+            background: var(--accent-cyan) !important;
+            color: #000000 !important;
+            border: 2px solid #000000 !important;
+            font-family: var(--font-family-body) !important;
+            text-transform: lowercase !important;
+            font-size: 0.75rem !important;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: #000000 !important;
+            border-right: 2px solid #000000 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+            width: 260px !important;
+        }
+
+        .sidebar-brand {
+            border-bottom: 2px solid #222222 !important;
+            padding: 24px !important;
+        }
+
+        .sidebar-menu {
+            padding: 24px 12px !important;
+            gap: 8px !important;
+        }
+
+        .sidebar-item {
+            border-radius: 0 !important;
+            border: none !important;
+            text-transform: lowercase !important;
+            color: #ffffff !important;
+            padding: 12px 16px !important;
+            font-size: 0.95rem !important;
+            font-weight: 500 !important;
+        }
+
+        .sidebar-item:hover {
+            background: var(--accent-purple) !important;
+            color: #ffffff !important;
+            transform: none !important;
+        }
+
+        .sidebar-item:hover svg {
+            transform: none !important;
+        }
+
+        .sidebar-item.active {
+            background: var(--accent-cyan) !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+        }
+
+        .sidebar-item.active svg {
+            stroke: #000000 !important;
+        }
+
+        .sidebar-footer {
+            border-top: 2px solid #222222 !important;
+        }
+
+        .status-badge {
+            color: #ffffff !important;
+            font-size: 0.8rem !important;
+            text-transform: lowercase !important;
+        }
+
+        .status-dot {
+            box-shadow: none !important;
+            animation: none !important;
+            background-color: var(--accent-cyan) !important;
+        }
+
+        /* MAIN LAYOUT */
+        .main-container {
+            background: #ffffff !important;
+        }
+
+        .main-header {
+            border-bottom: 2px solid #000000 !important;
+            background: #ffffff !important;
+            padding: 0 30px !important;
+        }
+
+        .main-header h1 {
+            font-family: var(--font-family-body) !important;
+            font-weight: 700 !important;
+            text-transform: lowercase !important;
+            color: #000000 !important;
+        }
+
+        .content-area {
+            background: #ffffff !important;
+            padding: 30px !important;
+        }
+
+        .tab-pane {
+            background: #ffffff !important;
+        }
+
+        /* CARDS & PANELS */
+        .dashboard-card, .admin-card, .panel, .config-section, .log-container, .terminal-container {
+            border-radius: 0 !important;
+            border: 2px solid #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: -6px 6px 0 #000000 !important;
+            padding: 24px !important;
+            margin-bottom: 30px !important;
+        }
+
+        .card-header, .panel-header {
+            border-bottom: 2px solid #000000 !important;
+            margin-bottom: 20px !important;
+            padding-bottom: 12px !important;
+        }
+
+        .card-title, .panel-title, h2, h3, h4 {
+            font-family: var(--font-family-body) !important;
+            font-weight: 700 !important;
+            text-transform: lowercase !important;
+            color: #000000 !important;
+        }
+
+        /* TABLES */
+        .table-container {
+            border: 2px solid #000000 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+            margin-bottom: 20px !important;
+        }
+
+        table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+
+        th {
+            background: #000000 !important;
+            color: #ffffff !important;
+            text-transform: lowercase !important;
+            font-weight: 600 !important;
+            padding: 12px 16px !important;
+            border: 1px solid #222222 !important;
+        }
+
+        td {
+            padding: 12px 16px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+        }
+
+        tr:hover td {
+            background: rgba(145, 87, 243, 0.05) !important;
+        }
+
+        /* FORMS & INPUTS */
+        .form-group label {
+            text-transform: lowercase !important;
+            color: #000000 !important;
+            font-weight: 600 !important;
+            margin-bottom: 6px !important;
+            display: block !important;
+        }
+
+        .form-control, select, input, textarea {
+            border-radius: 0 !important;
+            border: 2px solid #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 10px 14px !important;
+            font-family: var(--font-family-body) !important;
+            box-shadow: -3px 3px 0 #000000 !important;
+            outline: none !important;
+        }
+
+        .form-control:focus, select:focus, input:focus, textarea:focus {
+            box-shadow: 0 0 0 3px var(--accent-cyan) !important;
+            border-color: #000000 !important;
+            background: #ffffff !important;
+        }
+
+        /* BUTTONS */
+        .btn {
+            font-family: var(--font-family-body) !important;
+            text-transform: lowercase !important;
+            font-weight: 600 !important;
+            padding: 10px 24px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            cursor: pointer !important;
+            transition: all 0.25s ease !important;
+            outline: none !important;
+        }
+
+        .btn-primary {
+            border-radius: 9999px !important; /* Pill shape */
+            background: #000000 !important;
+            color: #ffffff !important;
+            border: 2px solid #000000 !important;
+            box-shadow: none !important;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-purple) !important;
+            border-color: var(--accent-purple) !important;
+            color: #ffffff !important;
+        }
+
+        .btn-secondary {
+            border-radius: 0 !important; /* Zero radius */
+            background: transparent !important;
+            color: #000000 !important;
+            border: 2px solid #000000 !important;
+            box-shadow: -3px 3px 0 #000000 !important;
+        }
+
+        .btn-secondary:hover {
+            background: var(--accent-purple) !important;
+            color: #ffffff !important;
+            border-color: var(--accent-purple) !important;
+        }
+
+        /* TAB CONTROLS (Top navigation tabs in admin panel) */
+        .tab-controls {
+            display: flex !important;
+            gap: 10px !important;
+            border-bottom: 2px solid #000000 !important;
+            padding-bottom: 12px !important;
+            margin-bottom: 30px !important;
+        }
+
+        .tab-btn {
+            border-radius: 0 !important;
+            border: 2px solid #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: -3px 3px 0 #000000 !important;
+            padding: 8px 16px !important;
+            font-weight: 600 !important;
+            text-transform: lowercase !important;
+        }
+
+        .tab-btn:hover {
+            background: var(--accent-purple) !important;
+            color: #ffffff !important;
+            border-color: var(--accent-purple) !important;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-cyan) !important;
+            color: #000000 !important;
+            box-shadow: -3px 3px 0 #000000 !important;
+            border-color: #000000 !important;
+        }
+
+        /* BADGES & TAGS */
+        .badge, .tag {
+            border-radius: 0 !important;
+            border: 1px solid #000000 !important;
+            font-family: var(--font-family-body) !important;
+            font-weight: 500 !important;
+            font-size: 0.75rem !important;
+            text-transform: lowercase !important;
+            padding: 4px 8px !important;
+        }
+
+        .badge-success { background: #2ecc71 !important; color: #ffffff !important; }
+        .badge-warning { background: var(--accent-cyan) !important; color: #000000 !important; }
+        .badge-danger { background: var(--accent-red) !important; color: #ffffff !important; }
+
+        /* MODAL POPUPS */
+        .modal-content {
+            border-radius: 0 !important;
+            border: 2px solid #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: -10px 10px 0 #000000 !important;
+            padding: 30px !important;
+        }
+
+        .modal-header {
+            border-bottom: 2px solid #000000 !important;
+            margin-bottom: 20px !important;
+            padding-bottom: 12px !important;
+        }
+
+        .modal-footer {
+            border-top: 2px solid #000000 !important;
+            margin-top: 20px !important;
+            padding-top: 12px !important;
+        }
+
+        /* TOAST */
+        .toast {
+            border-radius: 0 !important;
+            border: 2px solid #000000 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: -6px 6px 0 var(--accent-cyan) !important;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-brand">
+                <span class="brand-title" id="sidebar-logo">cervello</span>
+                <span class="brand-tag">ADMIN</span>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="sidebar-item active" data-tab="tab-status">
+                    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg>
+                    <span>Stato & Log</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-prompts">
+                    <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    <span>Prompt Agenti</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-ontology">
+                    <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                    <span>Ontology Center</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-automations">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    <span>Automazioni Rules</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-ingest">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <span>Ingest Terminal</span>
+                </div>
+                <div class="sidebar-item" data-tab="tab-settings">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                    <span>Configurazione</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="sidebar-footer">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span id="connection-status">Online & Monitorando</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="main-container">
+        
+        <!-- HEADER -->
+        <div class="main-header">
+            <div class="header-title" id="header-title-text">Console Stato & Log</div>
+            <div class="header-actions">
+                <a href="/" target="_blank" class="btn-view-client">Apri Consultazione ↗</a>
+            </div>
+        </div>
+
+        <!-- TAB CONTENT CONTAINER -->
+        <div class="tab-content">
+            
+            <!-- TAB 1: STATO & LOG -->
+            <div id="tab-status" class="tab-pane active">
+                <div class="grid-3">
+                    <div class="panel-card">
+                        <div class="card-header">
+                            <span class="card-title">🖥️ Monitor Daemon</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px;">
+                            <div>Watcher locale: <span id="watcher-status" style="color:var(--accent-green); font-weight:600;">Attivo</span></div>
+                            <div>Pianificatore: <span id="scheduler-status" style="color:var(--accent-green); font-weight:600;">In esecuzione</span></div>
+                            <div>IMAP Listeners: <span id="imap-status" style="color:var(--accent-green); font-weight:600;">In ascolto</span></div>
+                        </div>
+                    </div>
+                    
+                    <div class="panel-card">
+                        <div class="card-header">
+                            <span class="card-title">📂 Ingestione Coda</span>
+                        </div>
+                        <div style="font-size: 0.9rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 8px;">
+                            <div>File non elaborati: <span id="queue-count" style="font-weight:700; color:var(--accent-purple);">0</span></div>
+                            <div>Ultimo Sync: <span id="last-sync-time">Oggi</span></div>
+                            <div style="display:flex; gap:8px; margin-top:4px;">
+                                <button class="btn btn-primary btn-sm" id="btn-sync-now">Avvia Ingestione</button>
+                                <button class="btn btn-secondary btn-sm" id="btn-stop-ingest" style="display:none;">Stop</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel-card">
+                        <div class="card-header">
+                            <span class="card-title">⚙️ Azioni Rapide</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="runTaskDirectly('graphify_update')">Rebuild Grafi</button>
+                            <button class="btn btn-secondary btn-sm" onclick="runTaskDirectly('weekly_reflection')">Reflect Ora</button>
+                            <button class="btn btn-secondary btn-sm" onclick="runTaskDirectly('dream')">Sogno Ora</button>
+                            <button class="btn btn-secondary btn-sm" onclick="runTaskDirectly('briefing')">Briefing Ora</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel-card" style="flex-grow: 1;">
+                    <div class="card-header">
+                        <span class="card-title" style="color: var(--accent-cyan);">📟 Streaming Log di Sistema (SSE)</span>
+                        <button class="btn btn-secondary btn-sm" id="btn-clear-logs">Pulisci Log</button>
+                    </div>
+                    <div class="terminal-container" id="terminal-logs">
+                        <!-- Log lines populated here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: PROMPT AGENTI -->
+            <div id="tab-prompts" class="tab-pane">
+                <div class="panel-card" style="flex-grow: 1;">
+                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                        <span class="card-title">🤖 Istruzioni di Sistema per gli Agenti</span>
+                        <button class="btn btn-purple btn-sm" id="btn-add-agent" style="padding: 6px 12px; font-weight: 600; background:var(--accent-purple); color:#fff; border:none; border-radius:6px; cursor:pointer;">+ Nuovo Agente</button>
+                    </div>
+                    
+                    <div class="prompt-subtabs" id="prompt-agent-tabs">
+                        <!-- Subtabs populated dynamically -->
+                    </div>
+
+                    <div class="form-group" style="flex-grow: 1;">
+                        <textarea class="form-control editor-textarea" id="agent-prompt-editor" placeholder="Caricamento prompt..."></textarea>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.8rem; color:var(--text-muted);">* I prompt vengono salvati in agents.md con auto-commit Git.</span>
+                        <button class="btn btn-primary" id="btn-save-prompts">Salva Prompt Sezione</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: ONTOLOGY CENTER -->
+            <div id="tab-ontology" class="tab-pane">
+                <div class="panel-card" style="flex-grow: 1;">
+                    <div class="card-header">
+                        <span class="card-title">🧠 Decisioni e Relazioni dell'Ontologia Emergente</span>
+                        <button class="btn btn-primary btn-sm" id="btn-run-ontology">Avvia Ricerca Ontologica</button>
+                    </div>
+                    
+                    <p style="font-size:0.9rem; color:var(--text-secondary);">
+                        L'Ontology Agent scansiona in background e applica autonomamente fusioni, collegamenti e gerarchie. Qui trovi il registro degli interventi eseguiti, che puoi confermare o annullare (Rollback) ripristinando all'istante lo stato precedente dei file.
+                    </p>
+
+                    <div style="overflow-x: auto; flex-grow: 1;">
+                        <table class="proposal-table" id="ontology-history-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Dettagli Operazione</th>
+                                    <th>Motivazione</th>
+                                    <th>Stato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ontology-history-body">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; color:var(--text-muted);">Caricamento cronologia ontologia...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: AUTOMAZIONI RULES -->
+            <div id="tab-automations" class="tab-pane">
+                <div class="panel-card" style="flex-grow: 1;">
+                    <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:16px;">
+                        <span class="card-title">📅 Gestione dei Processi ed Automazioni di Background</span>
+                        <button class="btn btn-purple btn-sm" id="btn-new-automation" style="padding: 6px 12px; font-weight: 600; background:var(--accent-purple); color:#fff; border:none; border-radius:6px; cursor:pointer;">+ Nuova Automazione</button>
+                    </div>
+                    
+                    <p style="font-size:0.9rem; color:var(--text-secondary); margin-bottom:12px;">
+                        Abilita, disabilita e pianifica i daemon periodici del Secondo Cervello.
+                    </p>
+
+                    <div style="display:flex; flex-direction:column; gap:16px;" id="automations-container">
+                        <!-- Automations populated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 5: INGEST TERMINAL -->
+            <div id="tab-ingest" class="tab-pane">
+                <div class="panel-card">
+                    <div class="card-header">
+                        <span class="card-title">📂 Upload & Elaborazione File Manuali</span>
+                    </div>
+                    <div class="drag-zone" id="upload-drag-zone">
+                        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <p>Trascina qui i tuoi file (.md, .txt, .pdf, ecc.) o fai clic per caricarli.</p>
+                        <input type="file" id="file-uploader-input" multiple style="display:none;" />
+                    </div>
+                    <div id="upload-files-preview" style="font-size:0.85rem; color:var(--text-secondary);"></div>
+                </div>
+
+                <div class="panel-card" style="flex-grow:1;">
+                    <div class="card-header">
+                        <span class="card-title">📋 Coda dei File in Attesa di Elaborazione</span>
+                    </div>
+                    <div style="overflow-y:auto; flex-grow:1;" id="ingest-queue-list">
+                        <!-- Ingest queue preview -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 6: CONFIGURAZIONE -->
+            <div id="tab-settings" class="tab-pane">
+                <div class="grid-2" style="flex-grow: 1;">
+                    <div class="panel-card">
+                        <div class="card-header">
+                            <span class="card-title">⚙️ settings.md (Preferenze YAML)</span>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; flex-grow:1; max-height:480px; padding-right:8px;" id="settings-form-container">
+                            <!-- Settings form generated dynamically -->
+                        </div>
+                        <button class="btn btn-primary" id="btn-save-settings">Salva settings.md</button>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:16px; flex-grow:1;">
+                        <div class="panel-card">
+                            <div class="card-header">
+                                <span class="card-title">🔐 Credenziali & Chiavi API</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; gap:12px; overflow-y:auto; max-height:300px; padding-right:8px;" id="visual-keys-container">
+                                <!-- Popolated dynamically -->
+                            </div>
+                            <button class="btn btn-primary" id="btn-save-visual-keys" style="margin-top:12px;">Salva Credenziali API</button>
+                        </div>
+
+                        <div class="panel-card" style="flex-grow:1;">
+                            <div class="card-header">
+                                <span class="card-title">📝 File .env Grezzo</span>
+                            </div>
+                            <div class="form-group" style="flex-grow: 1; margin-bottom:12px;">
+                                <textarea class="form-control editor-textarea" id="env-editor" style="height:150px; font-family:'JetBrains Mono'" placeholder="Caricamento .env..."></textarea>
+                            </div>
+                            <button class="btn btn-secondary" id="btn-save-env">Salva .env Grezzo</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Logo freakgrotesk composer
+        function renderFreakLogo(elementId, text) {
+            const el = document.getElementById(elementId);
+            if (!el) return;
+            el.innerHTML = text.split('').map(char => {
+                if (char === ' ') return '&nbsp;';
+                const ssNum = String(Math.floor(Math.random() * 20) + 1).padStart(2, '0');
+                return `<span style="font-feature-settings: 'ss${ssNum}'">${char}</span>`;
+            }).join('');
+        }
+        
+        // Execute logo rendering
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFreakLogo('sidebar-logo', 'cervello');
+        });
+
+        // State variables
+        let currentActiveTab = 'tab-status';
+        let allPrompts = {};
+        let activePromptAgent = '';
+        let sseSource = null;
+        let originalSettings = {};
+
+        // Tab Switching
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', () => {
+                const targetTab = item.getAttribute('data-tab');
+                switchTab(targetTab);
+            });
+        });
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                if (item.getAttribute('data-tab') === tabId) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            document.querySelectorAll('.tab-pane').forEach(pane => {
+                pane.classList.remove('active');
+            });
+
+            const targetPane = document.getElementById(tabId);
+            if (targetPane) {
+                targetPane.classList.add('active');
+            }
+
+            currentActiveTab = tabId;
+            
+            // Set header title
+            const itemText = document.querySelector(`.sidebar-item[data-tab="${tabId}"] span`).innerText;
+            document.getElementById('header-title-text').innerText = 'Console ' + itemText;
+
+            // Trigger specific tab loading functions
+            if (tabId === 'tab-prompts') {
+                loadPrompts();
+            } else if (tabId === 'tab-ontology') {
+                loadOntologyHistory();
+            } else if (tabId === 'tab-automations') {
+                loadAutomations();
+            } else if (tabId === 'tab-settings') {
+                loadSettingsAndEnv();
+            } else if (tabId === 'tab-status') {
+                updateQueueStatus();
+            }
+        }
+
+        // --- Status and Real-time SSE Logs ---
+        function startSSELogStream() {
+            if (sseSource) {
+                sseSource.close();
+            }
+            
+            sseSource = new EventSource('/api/logs/stream');
+            const term = document.getElementById('terminal-logs');
+            
+            sseSource.onmessage = function(event) {
+                if (event.data === ':heartbeat') return;
+                
+                const line = event.data;
+                const lineDiv = document.createElement('div');
+                lineDiv.className = 'log-line';
+                
+                // Classificazione log per colori
+                if (line.includes('[SCHEDULER]')) {
+                    lineDiv.classList.add('log-scheduler');
+                } else if (line.includes('[INGESTION]')) {
+                    lineDiv.classList.add('log-ingestion');
+                } else if (line.includes('[ADMIN]')) {
+                    lineDiv.classList.add('log-admin');
+                } else if (line.includes('Errore') || line.includes('error') || line.includes('Exception')) {
+                    lineDiv.classList.add('log-error');
+                }
+                
+                lineDiv.innerText = line;
+                term.appendChild(lineDiv);
+                
+                // Auto scroll
+                term.scrollTop = term.scrollHeight;
+            };
+            
+            sseSource.onerror = function() {
+                console.log("Connessione log persa, tentativo di riconnessione...");
+                setTimeout(startSSELogStream, 5000);
+            };
+        }
+
+        document.getElementById('btn-clear-logs').addEventListener('click', () => {
+            document.getElementById('terminal-logs').innerHTML = '';
+        });
+
+        // --- Status Updates ---
+        async function updateQueueStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                
+                document.getElementById('queue-count').innerText = data.queue_count;
+                
+                // Update button visibility
+                if (data.running) {
+                    document.getElementById('btn-sync-now').style.display = 'none';
+                    document.getElementById('btn-stop-ingest').style.display = 'inline-flex';
+                    document.getElementById('connection-status').innerText = `Ingestione attiva (${data.active_source})`;
+                    document.getElementById('connection-status').parentElement.querySelector('.status-dot').style.backgroundColor = 'var(--accent-purple)';
+                } else {
+                    document.getElementById('btn-sync-now').style.display = 'inline-flex';
+                    document.getElementById('btn-stop-ingest').style.display = 'none';
+                    document.getElementById('connection-status').innerText = 'Online & Monitorando';
+                    document.getElementById('connection-status').parentElement.querySelector('.status-dot').style.backgroundColor = 'var(--accent-green)';
+                }
+            } catch (err) {
+                console.error("Errore aggiornamento stato coda:", err);
+            }
+        }
+
+        document.getElementById('btn-sync-now').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/ingest/start', { method: 'POST' });
+                updateQueueStatus();
+            } catch (err) {
+                alert("Errore nell'avviare l'ingestione.");
+            }
+        });
+
+        document.getElementById('btn-stop-ingest').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/ingest/stop', { method: 'POST' });
+                updateQueueStatus();
+            } catch (err) {
+                alert("Errore nell'arrestare l'ingestione.");
+            }
+        });
+
+        async function runTaskDirectly(taskName) {
+            try {
+                const res = await fetch(`/api/admin/automations/${taskName}/run`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+            } catch (err) {
+                alert("Errore nel lanciare il compito.");
+            }
+        }
+
+        // --- PROMPTS EDITING ---
+        async function loadPrompts() {
+            try {
+                const res = await fetch('/api/admin/prompts');
+                const data = await res.json();
+                allPrompts = data.prompts;
+                
+                // Build agent subtabs
+                const container = document.getElementById('prompt-agent-tabs');
+                container.innerHTML = '';
+                
+                Object.keys(allPrompts).forEach((agent, idx) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'prompt-subtab';
+                    if (idx === 0 || agent === activePromptAgent) {
+                        btn.classList.add('active');
+                        activePromptAgent = agent;
+                    }
+                    btn.innerText = agent;
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.prompt-subtab').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        activePromptAgent = agent;
+                        document.getElementById('agent-prompt-editor').value = allPrompts[agent];
+                    });
+                    container.appendChild(btn);
+                });
+                
+                if (activePromptAgent) {
+                    document.getElementById('agent-prompt-editor').value = allPrompts[activePromptAgent];
+                }
+            } catch (err) {
+                console.error("Errore caricamento prompt:", err);
+            }
+        }
+
+        document.getElementById('btn-save-prompts').addEventListener('click', async () => {
+            if (!activePromptAgent) return;
+            
+            allPrompts[activePromptAgent] = document.getElementById('agent-prompt-editor').value;
+            
+            try {
+                const res = await fetch('/api/admin/prompts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompts: allPrompts })
+                });
+                const data = await res.json();
+                alert("Prompt salvato con successo!");
+            } catch (err) {
+                alert("Errore nel salvare il prompt.");
+            }
+        });
+
+        // --- ONTOLOGY REGISTER & ROLLBACK ---
+        async function loadOntologyHistory() {
+            try {
+                const res = await fetch('/api/admin/ontology/history');
+                const data = await res.json();
+                const tbody = document.getElementById('ontology-history-body');
+                tbody.innerHTML = '';
+                
+                if (!data.history || data.history.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Nessuna decisione ontologica registrata nello storico.</td></tr>';
+                    return;
+                }
+                
+                data.history.forEach(item => {
+                    const tr = document.createElement('tr');
+                    
+                    const badgeClass = item.type === 'merge' ? 'badge-merge' : (item.type === 'hierarchy' ? 'badge-hierarchy' : 'badge-link');
+                    const labelType = item.type === 'merge' ? 'Fusione' : (item.type === 'hierarchy' ? 'Gerarchia' : 'Link');
+                    
+                    let detailHtml = '';
+                    if (item.type === 'merge') {
+                        detailHtml = `Fondere <code>${item.source}</code> in <code>${item.target}</code>`;
+                    } else if (item.type === 'hierarchy') {
+                        detailHtml = `Parent <code>${item.parent}</code> di <code>${item.child}</code>`;
+                    } else {
+                        detailHtml = `Collegamento <code>${item.source}</code> ↔ <code>${item.target}</code>`;
+                    }
+                    
+                    let statusClass = 'status-applied';
+                    let statusText = 'Auto Applicata';
+                    if (item.status === 'rolled_back') {
+                        statusClass = 'status-rolled';
+                        statusText = 'Annullata';
+                    } else if (item.status === 'confirmed') {
+                        statusClass = 'status-confirmed';
+                        statusText = 'Confermata';
+                    }
+                    
+                    let actionButtons = '';
+                    if (item.status === 'applied_auto') {
+                        actionButtons = `
+                            <button class="btn btn-danger btn-sm" onclick="rollbackOntology('${item.id}')">Annulla</button>
+                            <button class="btn btn-success btn-sm" onclick="confirmOntology('${item.id}')">Conferma</button>
+                        `;
+                    } else {
+                        actionButtons = `<span style="font-size:0.8rem; color:var(--text-muted);">${item.timestamp}</span>`;
+                    }
+                    
+                    tr.innerHTML = `
+                        <td><strong>${item.id}</strong></td>
+                        <td><span class="proposal-badge ${badgeClass}">${labelType}</span></td>
+                        <td>${detailHtml}</td>
+                        <td><span style="font-size:0.85rem;">${item.reason}</span></td>
+                        <td><span class="status-pill ${statusClass}">${statusText}</span></td>
+                        <td><div style="display:flex; gap:8px;">${actionButtons}</div></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error("Errore caricamento storico ontologia:", err);
+            }
+        }
+
+        document.getElementById('btn-run-ontology').addEventListener('click', async () => {
+            try {
+                const res = await fetch('/api/admin/ontology/run', { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                setTimeout(loadOntologyHistory, 1000);
+            } catch (err) {
+                alert("Errore nell'avviare la scansione ontologica.");
+            }
+        });
+
+        async function rollbackOntology(id) {
+            if (!confirm(`Vuoi annullare la decisione ${id}? Ripristinerà tutti i file modificati o eliminati allo stato precedente.`)) return;
+            try {
+                const res = await fetch(`/api/admin/ontology/proposals/${id}/rollback`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                loadOntologyHistory();
+            } catch (err) {
+                alert("Errore durante l'annullamento.");
+            }
+        }
+
+        async function confirmOntology(id) {
+            try {
+                const res = await fetch(`/api/admin/ontology/proposals/${id}/confirm`, { method: 'POST' });
+                const data = await res.json();
+                alert(data.message);
+                loadOntologyHistory();
+            } catch (err) {
+                alert("Errore durante la conferma.");
+            }
+        }
+
+        // --- AUTOMATIONS ---
+        async function loadAutomations() {
+            try {
+                const res = await fetch('/api/admin/automations');
+                const data = await res.json();
+                const container = document.getElementById('automations-container');
+                container.innerHTML = '';
+                
+                Object.keys(data.automations).forEach(key => {
+                    const auto = data.automations[key];
+                    const card = document.createElement('div');
+                    card.className = 'panel-card';
+                    card.style.flexDirection = 'row';
+                    card.style.justifyContent = 'space-between';
+                    card.style.alignItems = 'center';
+                    card.style.padding = '18px 24px';
+                    
+                    card.innerHTML = `
+                        <div style="display:flex; flex-direction:column; gap:6px; flex-grow:1; padding-right:16px;">
+                            <span style="font-weight:600; font-size:1rem;">${auto.name}</span>
+                            <span style="font-size:0.85rem; color:var(--text-secondary);">${auto.description}</span>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+                                <span style="font-size:0.8rem; color:var(--text-muted);">Pianificazione (Cron/Sec):</span>
+                                <input type="text" class="form-control" style="padding:4px 8px; font-size:0.8rem; width:120px;" value="${auto.timing}" id="schedule-${key}">
+                                <button class="btn btn-secondary btn-sm" onclick="saveAutomationSchedule('${key}')">Salva Timing</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:16px;">
+                            <button class="btn btn-secondary btn-sm" onclick="runTaskDirectly('${key}')">Lancia Ora</button>
+                            <label class="switch">
+                                <input type="checkbox" id="toggle-${key}" ${auto.enabled ? 'checked' : ''} onchange="toggleAutomation('${key}')">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            } catch (err) {
+                console.error("Errore caricamento automazioni:", err);
+            }
+        }
+
+        async function toggleAutomation(key) {
+            try {
+                const res = await fetch(`/api/admin/automations/${key}/toggle`, { method: 'POST' });
+                const data = await res.json();
+                loadAutomations();
+            } catch (err) {
+                alert("Errore nell'abilitare/disabilitare l'automazione.");
+            }
+        }
+
+        async function saveAutomationSchedule(key) {
+            const val = document.getElementById(`schedule-${key}`).value;
+            try {
+                const res = await fetch(`/api/admin/automations/${key}/schedule`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ schedule: val })
+                });
+                const data = await res.json();
+                alert("Timing aggiornato con successo!");
+                loadAutomations();
+            } catch (err) {
+                alert("Errore nel salvare il timing.");
+            }
+        }
+
+        // --- SETTINGS AND ENV ---
+        let originalEnv = {};
+        let agentFallbacks = {};
+        const agentsList = ["query_agent", "ontology_agent", "ingest_agent", "reflect_agent", "dream_agent", "briefing_agent"];
+
+        function renderFallbacks(agent, list) {
+            const container = document.getElementById(`fallback-list-${agent}`);
+            if (!container) return;
+            container.innerHTML = '';
+            
+            if (!list || list.length === 0) {
+                container.innerHTML = `<span style="font-size:0.75rem; color:var(--text-secondary); font-style:italic;">Nessun fallback configurato.</span>`;
+                return;
+            }
+            
+            list.forEach((model, index) => {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.alignItems = 'center';
+                row.style.justifyContent = 'space-between';
+                row.style.background = 'rgba(255,255,255,0.03)';
+                row.style.padding = '4px 8px';
+                row.style.borderRadius = '4px';
+                row.style.fontSize = '0.8rem';
+                row.style.fontFamily = "'JetBrains Mono', monospace";
+                row.style.marginBottom = "4px";
+                
+                row.innerHTML = `
+                    <span style="color:var(--text-primary); text-overflow:ellipsis; overflow:hidden; white-space:nowrap; max-width:70%;">${model}</span>
+                    <div style="display:flex; gap:4px;">
+                        <button class="btn" style="height:22px; padding:0 6px; font-size:0.7rem; background:rgba(255,255,255,0.05); color:var(--text-primary);" onclick="event.preventDefault(); moveFallback('${agent}', ${index}, -1)" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button class="btn" style="height:22px; padding:0 6px; font-size:0.7rem; background:rgba(255,255,255,0.05); color:var(--text-primary);" onclick="event.preventDefault(); moveFallback('${agent}', ${index}, 1)" ${index === list.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button class="btn" style="height:22px; padding:0 6px; font-size:0.7rem; background:rgba(233,69,96,0.1); color:#ff6b6b;" onclick="event.preventDefault(); removeFallback('${agent}', ${index})">×</button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        window.addFallbackModel = function(agent) {
+            const input = document.getElementById(`add-fallback-input-${agent}`);
+            if (!input) return;
+            const val = input.value.trim();
+            if (!val) return;
+            if (!agentFallbacks[agent]) {
+                agentFallbacks[agent] = [];
+            }
+            agentFallbacks[agent].push(val);
+            input.value = '';
+            renderFallbacks(agent, agentFallbacks[agent]);
+        };
+        
+        window.removeFallback = function(agent, index) {
+            if (agentFallbacks[agent]) {
+                agentFallbacks[agent].splice(index, 1);
+                renderFallbacks(agent, agentFallbacks[agent]);
+            }
+        };
+        
+        window.moveFallback = function(agent, index, direction) {
+            const list = agentFallbacks[agent];
+            if (!list) return;
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= list.length) return;
+            const temp = list[index];
+            list[index] = list[targetIndex];
+            list[targetIndex] = temp;
+            renderFallbacks(agent, list);
+        };
+
+        async function loadSettingsAndEnv() {
+            try {
+                const res = await fetch('/api/admin/settings');
+                const data = await res.json();
+                originalSettings = data.settings;
+                originalEnv = data.env;
+                
+                // Popola .env raw
+                let envText = '';
+                Object.keys(data.env).forEach(k => {
+                    envText += `${k}="${data.env[k]}"\n`;
+                });
+                document.getElementById('env-editor').value = envText;
+                
+                // Popola form visuale chiavi API
+                const keyFields = [
+                    { id: 'env-gemini-key', name: 'GEMINI_API_KEY', label: 'Google Gemini API Key(s) (separate da virgola)' },
+                    { id: 'env-openai-key', name: 'OPENAI_API_KEY', label: 'OpenAI API Key' },
+                    { id: 'env-deepseek-key', name: 'DEEPSEEK_API_KEY', label: 'DeepSeek API Key' },
+                    { id: 'env-together-key', name: 'TOGETHER_API_KEY', label: 'Together AI API Key' },
+                    { id: 'env-dashscope-key', name: 'DASHSCOPE_API_KEY', label: 'DashScope API Key' },
+                    { id: 'env-baidu-key', name: 'BAIDU_API_KEY', label: 'Baidu API Key' },
+                    { id: 'env-elevenlabs-key', name: 'ELEVENLABS_API_KEY', label: 'ElevenLabs API Key' },
+                    { id: 'env-deepgram-key', name: 'DEEPGRAM_API_KEY', label: 'Deepgram API Key' },
+                    { id: 'env-free4all-password', name: 'FREE4ALL_PASSWORD', label: 'Password Portale Free4All' }
+                ];
+                
+                const visualKeysContainer = document.getElementById('visual-keys-container');
+                visualKeysContainer.innerHTML = '';
+                
+                keyFields.forEach(f => {
+                    const val = data.env[f.name] || '';
+                    const div = document.createElement('div');
+                    div.className = 'form-group';
+                    div.style.marginBottom = '10px';
+                    div.innerHTML = `
+                        <label class="form-label" style="font-size:0.8rem; margin-bottom:4px;">${f.label}</label>
+                        <input type="text" class="form-control" style="font-family:'JetBrains Mono'; font-size:0.8rem; height:32px;" value="${val}" id="${f.id}" placeholder="Non configurata">
+                    `;
+                    visualKeysContainer.appendChild(div);
+                });
+                
+                // Costruisci il form dei settings
+                const formContainer = document.getElementById('settings-form-container');
+                formContainer.innerHTML = '';
+                
+                // 1. Scheda Modelli & Fallback per Agente
+                const agentsCard = document.createElement('div');
+                agentsCard.className = 'panel-card';
+                agentsCard.style.gap = '14px';
+                agentsCard.style.background = 'rgba(255,255,255,0.01)';
+                agentsCard.innerHTML = `<span style="font-weight:600; font-size:0.9rem; display:flex; align-items:center; gap:8px;">🧠 Modelli & Fallback per Agente</span>
+                                        <p style="font-size:0.75rem; color:var(--text-secondary); margin:0;">Configura i modelli primari e la catena di fallback per ciascun agente.</p>`;
+                
+                agentsList.forEach(agent => {
+                    const agentCfg = originalSettings.models[agent] || {};
+                    let primaryVal = "";
+                    let fallbackList = [];
+                    
+                    if (typeof agentCfg === 'object' && agentCfg !== null) {
+                        primaryVal = agentCfg.primary || "";
+                        fallbackList = agentCfg.fallback || [];
+                    } else if (typeof agentCfg === 'string') {
+                        primaryVal = agentCfg;
+                    }
+                    
+                    agentFallbacks[agent] = [...fallbackList];
+                    
+                    const agentSection = document.createElement('div');
+                    agentSection.style.border = '1px solid rgba(255,255,255,0.05)';
+                    agentSection.style.borderRadius = '6px';
+                    agentSection.style.padding = '10px';
+                    agentSection.style.background = 'rgba(0,0,0,0.15)';
+                    agentSection.style.display = 'flex';
+                    agentSection.style.flexDirection = 'column';
+                    agentSection.style.gap = '6px';
+                    
+                    agentSection.innerHTML = `
+                        <span style="font-weight:600; font-size:0.8rem; color:#e94560; text-transform: capitalize;">🤖 ${agent.replace('_', ' ')}</span>
+                        <div class="form-group" style="margin-bottom: 2px;">
+                            <label class="form-label" style="font-size:0.7rem; margin-bottom:2px;">Modello Primario</label>
+                            <input type="text" class="form-control" style="font-family:'JetBrains Mono'; font-size:0.75rem; height: 28px;" value="${primaryVal}" id="agent-primary-${agent}" placeholder="es. google/gemini-3.5-pro">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label" style="font-size:0.7rem; margin-bottom:2px;">Catena di Fallback</label>
+                            <div id="fallback-list-${agent}" style="display:flex; flex-direction:column; margin-bottom:6px;">
+                                <!-- Fallbacks rendered here -->
+                            </div>
+                            <div style="display:flex; gap:6px;">
+                                <input type="text" class="form-control" style="font-family:'JetBrains Mono'; font-size:0.75rem; height: 28px;" id="add-fallback-input-${agent}" placeholder="Aggiungi fallback (es. openai/gpt-5)">
+                                <button class="btn btn-secondary" style="height:28px; padding: 0 10px; font-size:0.75rem;" onclick="event.preventDefault(); addFallbackModel('${agent}')">+ Aggiungi</button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    agentsCard.appendChild(agentSection);
+                    
+                    // Render fallbacks in microtask
+                    setTimeout(() => {
+                        renderFallbacks(agent, agentFallbacks[agent]);
+                    }, 0);
+                });
+                
+                formContainer.appendChild(agentsCard);
+                
+                // 2. Scheda Parametri Generali & Preferenze
+                const generalCard = document.createElement('div');
+                generalCard.className = 'panel-card';
+                generalCard.style.gap = '10px';
+                generalCard.style.background = 'rgba(255,255,255,0.01)';
+                generalCard.innerHTML = `<span style="font-weight:600; font-size:0.9rem;">⚙️ Parametri Generali</span>`;
+                
+                const tempVal = originalSettings.models.temperature !== undefined ? originalSettings.models.temperature : 0.2;
+                const tempRow = document.createElement('div');
+                tempRow.className = 'form-group';
+                tempRow.style.marginBottom = '8px';
+                tempRow.innerHTML = `
+                    <label class="form-label" style="font-size:0.8rem; margin-bottom:4px;">Temperatura Generativa (temperature)</label>
+                    <input type="number" step="0.1" class="form-control" style="font-size:0.8rem; height:32px;" value="${tempVal}" id="setting-models-temperature">
+                `;
+                generalCard.appendChild(tempRow);
+                
+                if (originalSettings.preferences) {
+                    Object.keys(originalSettings.preferences).forEach(k => {
+                        const row = document.createElement('div');
+                        row.className = 'form-group';
+                        row.style.marginBottom = '8px';
+                        row.innerHTML = `
+                            <label class="form-label" style="font-size:0.8rem; margin-bottom:4px;">${k}</label>
+                            <input type="text" class="form-control" style="font-size:0.8rem; height:32px;" value="${originalSettings.preferences[k]}" id="setting-pref-${k}">
+                        `;
+                        generalCard.appendChild(row);
+                    });
+                }
+                formContainer.appendChild(generalCard);
+                
+            } catch (err) {
+                console.error("Errore caricamento settings:", err);
+            }
+        }
+
+        // Event listener per salvare le credenziali API visualmente
+        document.getElementById('btn-save-visual-keys').addEventListener('click', async () => {
+            const envObj = JSON.parse(JSON.stringify(originalEnv));
+            
+            const keyFields = [
+                { id: 'env-gemini-key', name: 'GEMINI_API_KEY' },
+                { id: 'env-openai-key', name: 'OPENAI_API_KEY' },
+                { id: 'env-deepseek-key', name: 'DEEPSEEK_API_KEY' },
+                { id: 'env-together-key', name: 'TOGETHER_API_KEY' },
+                { id: 'env-dashscope-key', name: 'DASHSCOPE_API_KEY' },
+                { id: 'env-baidu-key', name: 'BAIDU_API_KEY' },
+                { id: 'env-elevenlabs-key', name: 'ELEVENLABS_API_KEY' },
+                { id: 'env-deepgram-key', name: 'DEEPGRAM_API_KEY' },
+                { id: 'env-free4all-password', name: 'FREE4ALL_PASSWORD' }
+            ];
+            
+            keyFields.forEach(f => {
+                const el = document.getElementById(f.id);
+                if (el) {
+                    envObj[f.name] = el.value.trim();
+                }
+            });
+            
+            try {
+                const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: originalSettings, env: envObj })
+                });
+                const data = await res.json();
+                alert("Credenziali API salvate con successo!");
+                loadSettingsAndEnv();
+            } catch (err) {
+                alert("Errore nel salvare le credenziali API.");
+            }
+        });
+
+        // Event listener per salvare il file .env grezzo
+        document.getElementById('btn-save-env').addEventListener('click', async () => {
+            const rawEnvText = document.getElementById('env-editor').value;
+            const envObj = {};
+            rawEnvText.split('\n').forEach(line => {
+                if (line.trim() === '') return;
+                if (line.includes('=')) {
+                    const [k, v] = line.split('=', 1);
+                    envObj[k.trim()] = line.substring(line.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '');
+                }
+            });
+            
+            try {
+                const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: originalSettings, env: envObj })
+                });
+                const data = await res.json();
+                alert(".env grezzo salvato con successo!");
+                loadSettingsAndEnv();
+            } catch (err) {
+                alert("Errore nel salvare il file .env grezzo.");
+            }
+        });
+
+        // Event listener per salvare settings.md
+        document.getElementById('btn-save-settings').addEventListener('click', async () => {
+            const settings = JSON.parse(JSON.stringify(originalSettings));
+            
+            settings.models = {
+                temperature: parseFloat(document.getElementById('setting-models-temperature').value) || 0.2
+            };
+            
+            agentsList.forEach(agent => {
+                const primaryEl = document.getElementById(`agent-primary-${agent}`);
+                if (primaryEl) {
+                    settings.models[agent] = {
+                        primary: primaryEl.value.trim(),
+                        fallback: agentFallbacks[agent] || []
+                    };
+                }
+            });
+            
+            if (settings.preferences) {
+                Object.keys(settings.preferences).forEach(k => {
+                    const el = document.getElementById(`setting-pref-${k}`);
+                    if (el) {
+                        const val = el.value.trim();
+                        if (val === 'true') settings.preferences[k] = true;
+                        else if (val === 'false') settings.preferences[k] = false;
+                        else settings.preferences[k] = val;
+                    }
+                });
+            }
+            
+            try {
+                const res = await fetch('/api/admin/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ settings: settings })
+                });
+                const data = await res.json();
+                alert("settings.md salvato con successo!");
+                loadSettingsAndEnv();
+            } catch (err) {
+                alert("Errore nel salvare settings.md.");
+            }
+        });
+
+        // --- FILE INGEST ZONE ---
+        const dragZone = document.getElementById('upload-drag-zone');
+        const fileInput = document.getElementById('file-uploader-input');
+        let filesToUpload = [];
+
+        dragZone.addEventListener('click', () => fileInput.click());
+
+        dragZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dragZone.style.borderColor = 'var(--accent-cyan)';
+        });
+
+        dragZone.addEventListener('dragleave', () => {
+            dragZone.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+        });
+
+        dragZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragZone.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+            if (e.dataTransfer.files.length > 0) {
+                handleSelectedFiles(e.dataTransfer.files);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                handleSelectedFiles(fileInput.files);
+            }
+        });
+
+        function handleSelectedFiles(files) {
+            filesToUpload = Array.from(files);
+            const preview = document.getElementById('upload-files-preview');
+            preview.innerHTML = `<strong>File selezionati:</strong><br>` + 
+                filesToUpload.map(f => `- ${f.name} (${(f.size/1024).toFixed(1)} KB)`).join('<br>');
+            
+            // Upload immediately
+            uploadFiles();
+        }
+
+        async function uploadFiles() {
+            if (filesToUpload.length === 0) return;
+            
+            const formData = new FormData();
+            filesToUpload.forEach(file => {
+                formData.append('files', file);
+            });
+            
+            const preview = document.getElementById('upload-files-preview');
+            preview.innerHTML += `<br><em style="color:var(--accent-cyan)">Caricamento ed elaborazione in corso...</em>`;
+            
+            try {
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                preview.innerHTML = `<span style="color:var(--accent-green)">Caricati con successo! Ingestione avviata.</span>`;
+                filesToUpload = [];
+                updateQueueStatus();
+            } catch (err) {
+                preview.innerHTML = `<span style="color:var(--accent-red)">Errore nel caricamento dei file.</span>`;
+            }
+        }
+
+        // --- NEW AUTOMATION WIZARD ---
+        const modal = document.getElementById('new-automation-modal');
+        const btnNewAuto = document.getElementById('btn-new-automation');
+        const btnCloseModal = document.getElementById('btn-close-modal');
+        const wizardSteps = [
+            document.getElementById('wizard-step-1'),
+            document.getElementById('wizard-step-2'),
+            document.getElementById('wizard-step-3')
+        ];
+        const wizardTitle = document.getElementById('wizard-title');
+        
+        let currentStep = 0;
+        
+        if (btnNewAuto) {
+            btnNewAuto.addEventListener('click', () => {
+                currentStep = 0;
+                showStep(0);
+                modal.style.display = 'flex';
+            });
+        }
+        
+        if (btnCloseModal) {
+            btnCloseModal.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        window.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+        
+        function showStep(stepIdx) {
+            wizardSteps.forEach((step, idx) => {
+                if (step) {
+                    step.style.display = (idx === stepIdx) ? 'flex' : 'none';
+                }
+            });
+            if (wizardTitle) {
+                wizardTitle.innerText = `🚀 Configurazione Nuova Automazione (Passo ${stepIdx + 1}/3)`;
+            }
+        }
+        
+        const next1 = document.getElementById('btn-wizard-next-1');
+        if (next1) {
+            next1.addEventListener('click', () => {
+                const key = document.getElementById('auto-key').value.trim();
+                const name = document.getElementById('auto-name').value.trim();
+                if (!key || !name) {
+                    alert("La chiave e il nome visualizzato sono obbligatori!");
+                    return;
+                }
+                currentStep = 1;
+                showStep(1);
+            });
+        }
+        
+        const prev2 = document.getElementById('btn-wizard-prev-2');
+        if (prev2) {
+            prev2.addEventListener('click', () => {
+                currentStep = 0;
+                showStep(0);
+            });
+        }
+        
+        const next2 = document.getElementById('btn-wizard-next-2');
+        if (next2) {
+            next2.addEventListener('click', () => {
+                const timing = document.getElementById('auto-timing').value.trim();
+                const argsRaw = document.getElementById('auto-args').value.trim();
+                if (!timing || !argsRaw) {
+                    alert("La pianificazione ed il comando sono obbligatori!");
+                    return;
+                }
+                try {
+                    JSON.parse(argsRaw);
+                } catch(e) {
+                    alert("Gli argomenti del comando devono essere un array JSON valido!");
+                    return;
+                }
+                currentStep = 2;
+                showStep(2);
+            });
+        }
+        
+        const prev3 = document.getElementById('btn-wizard-prev-3');
+        if (prev3) {
+            prev3.addEventListener('click', () => {
+                currentStep = 1;
+                showStep(1);
+            });
+        }
+        
+        const finishBtn = document.getElementById('btn-wizard-finish');
+        if (finishBtn) {
+            finishBtn.addEventListener('click', async () => {
+                const key = document.getElementById('auto-key').value.trim();
+                const name = document.getElementById('auto-name').value.trim();
+                const desc = document.getElementById('auto-desc').value.trim();
+                const timing = document.getElementById('auto-timing').value.trim();
+                const argsRaw = document.getElementById('auto-args').value.trim();
+                const agentPrompt = document.getElementById('auto-agent-prompt').value.trim();
+                
+                let command_args = [];
+                try {
+                    command_args = JSON.parse(argsRaw);
+                } catch(e) {
+                    alert("Gli argomenti del comando devono essere un array JSON valido!");
+                    return;
+                }
+                
+                const payload = {
+                    key: key,
+                    name: name,
+                    description: desc,
+                    timing: timing,
+                    command_args: command_args,
+                    agent_prompt: agentPrompt || null
+                };
+                
+                try {
+                    const res = await fetch('/api/admin/automations', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert(data.message);
+                        modal.style.display = 'none';
+                        // Reset input
+                        document.getElementById('auto-key').value = '';
+                        document.getElementById('auto-name').value = '';
+                        document.getElementById('auto-desc').value = '';
+                        document.getElementById('auto-timing').value = '3600';
+                        document.getElementById('auto-args').value = '["whatsapp-sync"]';
+                        document.getElementById('auto-agent-prompt').value = '';
+                        loadAutomations();
+                    } else {
+                        alert("Errore nella creazione: " + data.detail);
+                    }
+                } catch (err) {
+                    alert("Errore nella chiamata API di creazione automazione.");
+                }
+            });
+        }
+
+        // --- NEW AGENT MODAL LOGIC ---
+        const agentModal = document.getElementById('new-agent-modal');
+        const btnAddAgent = document.getElementById('btn-add-agent');
+        const btnCloseAgentModal = document.getElementById('btn-close-agent-modal');
+        const btnCreateAgentSubmit = document.getElementById('btn-create-agent-submit');
+        
+        if (btnAddAgent) {
+            btnAddAgent.addEventListener('click', () => {
+                agentModal.style.display = 'flex';
+            });
+        }
+        if (btnCloseAgentModal) {
+            btnCloseAgentModal.addEventListener('click', () => {
+                agentModal.style.display = 'none';
+            });
+        }
+        if (btnCreateAgentSubmit) {
+            btnCreateAgentSubmit.addEventListener('click', async () => {
+                const name = document.getElementById('new-agent-name').value.trim();
+                const model = document.getElementById('new-agent-model').value.trim();
+                const instructions = document.getElementById('new-agent-instructions').value.trim();
+                
+                if (!name || !instructions) {
+                    alert("Il nome dell'agente e le istruzioni sono obbligatori!");
+                    return;
+                }
+                
+                const payload = {
+                    agent_name: name,
+                    system_instructions: instructions,
+                    primary_model: model,
+                    fallback_chain: ["google/gemini-2.5-pro", "openai/gpt-4o"]
+                };
+                
+                try {
+                    const res = await fetch('/api/admin/agents', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert(data.message || "Agente creato con successo!");
+                        agentModal.style.display = 'none';
+                        document.getElementById('new-agent-name').value = '';
+                        document.getElementById('new-agent-instructions').value = '';
+                        loadPrompts();
+                    } else {
+                        alert("Errore nella creazione dell'agente: " + data.detail);
+                    }
+                } catch (err) {
+                    alert("Errore nella chiamata API di creazione agente.");
+                }
+            });
+        }
+
+        // Initialize
+        startSSELogStream();
+        updateQueueStatus();
+        
+        // Auto update status every 15 seconds
+        setInterval(updateQueueStatus, 15000);
+    </script>
+
+    <!-- New Automation Modal (Wizard) -->
+    <div id="new-automation-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); backdrop-filter:blur(12px); z-index:1000; justify-content:center; align-items:center;">
+        <div class="panel-card" style="width:550px; max-height:90vh; overflow-y:auto; border:1px solid var(--accent-purple); box-shadow:0 0 40px var(--accent-purple-glow); padding:24px; display:flex; flex-direction:column; gap:16px; background:rgba(13, 17, 24, 0.95);">
+            <div class="card-header" style="border-bottom:1px solid var(--panel-border); padding-bottom:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <span class="card-title" id="wizard-title" style="font-size:1.15rem; font-weight:700;">🚀 Configurazione Nuova Automazione (Passo 1/3)</span>
+                <span class="modal-close" id="btn-close-modal" style="cursor:pointer; color:var(--text-secondary); font-size:1.6rem; font-weight:700; line-height:1;">&times;</span>
+            </div>
+
+            <!-- STEP 1: Basic Info -->
+            <div id="wizard-step-1" class="wizard-step" style="display:flex; flex-direction:column; gap:16px; width:100%;">
+                <p style="font-size:0.85rem; color:var(--text-secondary);">Definisci le informazioni di base per identificare l'automazione nel sistema.</p>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Chiave Univoca (es. whatsapp_sync)</label>
+                    <input type="text" id="auto-key" placeholder="whatsapp_sync" style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; font-size:0.9rem; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--panel-border)'">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Nome Visualizzato (es. Sincronizzazione WhatsApp)</label>
+                    <input type="text" id="auto-name" placeholder="Sincronizzazione WhatsApp" style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; font-size:0.9rem; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--panel-border)'">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Descrizione Funzionale</label>
+                    <textarea id="auto-desc" placeholder="Descrivi lo scopo di questo processo periodico..." style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; min-height:80px; resize:vertical; font-size:0.9rem; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--panel-border)'"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px; width:100%;">
+                    <button class="btn btn-purple btn-sm" id="btn-wizard-next-1" style="background:var(--accent-purple); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Avanti &rarr;</button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Trigger / Command -->
+            <div id="wizard-step-2" class="wizard-step" style="display:none; flex-direction:column; gap:16px; width:100%;">
+                <p style="font-size:0.85rem; color:var(--text-secondary);">Pianifica la frequenza ed indica gli argomenti del comando da eseguire.</p>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Pianificazione (Cron o Secondi, es. 3600 o */30 * * * *)</label>
+                    <input type="text" id="auto-timing" value="3600" placeholder="3600" style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; font-size:0.9rem; outline:none;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--panel-border)'">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Comando / Argomenti (JSON array, es. ["whatsapp-sync"])</label>
+                    <input type="text" id="auto-args" value='["whatsapp-sync"]' style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:'JetBrains Mono', monospace; font-size:0.85rem; outline:none;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--panel-border)'">
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:8px; margin-top:16px; width:100%;">
+                    <button class="btn btn-secondary btn-sm" id="btn-wizard-prev-2" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--panel-border); padding:8px 16px; border-radius:6px; cursor:pointer;">&larr; Indietro</button>
+                    <button class="btn btn-purple btn-sm" id="btn-wizard-next-2" style="background:var(--accent-purple); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600;">Avanti &rarr;</button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Agent System Prompt (Optional) -->
+            <div id="wizard-step-3" class="wizard-step" style="display:none; flex-direction:column; gap:16px; width:100%;">
+                <p style="font-size:0.85rem; color:var(--text-secondary);">Puoi definire un Prompt di Sistema per l'agente AI associato a questo processo (salvato in agents.md).</p>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">System Prompt dell'Agente (opzionale)</label>
+                    <textarea id="auto-agent-prompt" placeholder="Definisci le istruzioni del tuo agente, ad esempio: 'Il tuo compito è scansionare le ultime chat e riassumere i messaggi importanti...'" style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; min-height:180px; resize:vertical; font-size:0.85rem; outline:none;" onfocus="this.style.borderColor='var(--accent-purple)'" onblur="this.style.borderColor='var(--panel-border)'"></textarea>
+                </div>
+                <div style="display:flex; justify-content:space-between; gap:8px; margin-top:16px; width:100%;">
+                    <button class="btn btn-secondary btn-sm" id="btn-wizard-prev-3" style="background:rgba(255,255,255,0.05); color:#fff; border:1px solid var(--panel-border); padding:8px 16px; border-radius:6px; cursor:pointer;">&larr; Indietro</button>
+                    <button class="btn btn-purple btn-sm" id="btn-wizard-finish" style="background:var(--accent-purple); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:700;">Crea Automazione 🚀</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Agent Modal -->
+    <div id="new-agent-modal" class="modal-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); backdrop-filter:blur(12px); z-index:1000; justify-content:center; align-items:center;">
+        <div class="panel-card" style="width:500px; max-height:90vh; overflow-y:auto; border:1px solid var(--accent-purple); box-shadow:0 0 40px var(--accent-purple-glow); padding:24px; display:flex; flex-direction:column; gap:16px; background:rgba(13, 17, 24, 0.95);">
+            <div class="card-header" style="border-bottom:1px solid var(--panel-border); padding-bottom:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <span class="card-title" style="font-size:1.15rem; font-weight:700;">🤖 Crea Nuovo Agente AI</span>
+                <span class="modal-close" id="btn-close-agent-modal" style="cursor:pointer; color:var(--text-secondary); font-size:1.6rem; font-weight:700; line-height:1;">&times;</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:16px; width:100%;">
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Nome Agente (es. email_reply_agent)</label>
+                    <input type="text" id="new-agent-name" placeholder="email_reply_agent" style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; font-size:0.9rem; outline:none;">
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Modello Primario</label>
+                    <select id="new-agent-model" style="background:rgba(13, 17, 24, 0.95); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; font-size:0.9rem; outline:none; cursor:pointer;">
+                        <option value="z_ai/glm-5.2" selected>z_ai/glm-5.2 (Z_AI Reasoning Flagship)</option>
+                        <option value="google/gemini-2.5-pro">google/gemini-2.5-pro</option>
+                        <option value="google/gemini-3.5-flash">google/gemini-3.5-flash</option>
+                        <option value="openai/gpt-4o">openai/gpt-4o</option>
+                        <option value="deepseek/deepseek-chat">deepseek/deepseek-chat</option>
+                    </select>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                    <label style="font-size:0.8rem; font-weight:600; color:var(--text-secondary);">Istruzioni di Sistema (System Prompt)</label>
+                    <textarea id="new-agent-instructions" placeholder="Definisci il ruolo e le regole per questo agente..." style="background:rgba(255,255,255,0.05); border:1px solid var(--panel-border); color:#fff; padding:10px; border-radius:6px; font-family:inherit; min-height:150px; resize:vertical; font-size:0.9rem; outline:none;"></textarea>
+                </div>
+                <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px; width:100%;">
+                    <button class="btn btn-purple btn-sm" id="btn-create-agent-submit" style="background:var(--accent-purple); color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:700;">Crea Agente 🤖</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
