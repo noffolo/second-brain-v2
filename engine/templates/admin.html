@@ -1090,6 +1090,11 @@
                         <span class="card-title" style="color: var(--accent-cyan);">📟 Streaming Log di Sistema (SSE)</span>
                         <button class="btn btn-secondary btn-sm" id="btn-clear-logs">Pulisci Log</button>
                     </div>
+                    <!-- Contenitore Barra di Avanzamento -->
+                    <div id="progress-bar-container" style="display: none; margin-bottom: 15px; border: 2px solid #000000; box-shadow: -3px 3px 0 #000000; padding: 4px; background: #ffffff; position: relative; height: 32px; box-sizing: border-box;">
+                        <div id="progress-bar-fill" style="background: var(--accent-cyan, #B6D713); width: 0%; height: 100%; transition: width 0.3s ease;"></div>
+                        <span id="progress-bar-text" style="position: absolute; width: 100%; text-align: center; left: 0; top: 0; line-height: 24px; font-family: var(--font-family-body); font-size: 0.85rem; font-weight: 600; text-transform: lowercase; color: #000000; z-index: 2;">avanzamento: 0%</span>
+                    </div>
                     <div class="terminal-container" id="terminal-logs">
                         <!-- Log lines populated here -->
                     </div>
@@ -1307,6 +1312,27 @@
         }
 
         // --- Status and Real-time SSE Logs ---
+        let totalItems = 0;
+        let processedItems = 0;
+
+        function showProgressBar(percent, text) {
+            const container = document.getElementById('progress-bar-container');
+            const fill = document.getElementById('progress-bar-fill');
+            const label = document.getElementById('progress-bar-text');
+            if (container && fill && label) {
+                container.style.display = 'block';
+                fill.style.width = percent + '%';
+                label.innerText = text;
+            }
+        }
+
+        function hideProgressBar() {
+            const container = document.getElementById('progress-bar-container');
+            if (container) {
+                container.style.display = 'none';
+            }
+        }
+
         function startSSELogStream() {
             if (sseSource) {
                 sseSource.close();
@@ -1319,6 +1345,40 @@
                 if (event.data === ':heartbeat') return;
                 
                 const line = event.data;
+                
+                // Parse Graphify progress
+                const graphifyMatch = line.match(/chunk\s+(\d+)\/(\d+)/i);
+                if (graphifyMatch) {
+                    const current = parseInt(graphifyMatch[1], 10);
+                    const total = parseInt(graphifyMatch[2], 10);
+                    const percent = Math.round((current / total) * 100);
+                    showProgressBar(percent, `indicizzazione grafo: ${current}/${total} (${percent}%)`);
+                }
+
+                // Parse Ingestion mail total
+                const ingestTotalMatch = line.match(/Trovate\s+(\d+)\s+email\s+mancanti/i);
+                if (ingestTotalMatch) {
+                    totalItems = parseInt(ingestTotalMatch[1], 10);
+                    processedItems = 0;
+                    if (totalItems > 0) {
+                        showProgressBar(0, `sincronizzazione mail: 0/${totalItems} (0%)`);
+                    }
+                }
+
+                // Parse Ingestion completed file
+                if (line.includes('Completata elaborazione per:') || line.includes('Post-filtro: Saltato')) {
+                    processedItems++;
+                    if (totalItems > 0) {
+                        const percent = Math.min(100, Math.round((processedItems / totalItems) * 100));
+                        showProgressBar(percent, `sincronizzazione mail: ${processedItems}/${totalItems} (${percent}%)`);
+                    }
+                }
+
+                // Hide progress bar on completion
+                if (line.includes('Sincronizzazione completata') || line.includes('Completata elaborazione:') || line.includes('Grafo Wiki costruito con successo') || line.includes('Ontologia applicata con successo')) {
+                    setTimeout(hideProgressBar, 5000);
+                }
+
                 const lineDiv = document.createElement('div');
                 lineDiv.className = 'log-line';
                 
