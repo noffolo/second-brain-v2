@@ -71,16 +71,18 @@ sources:
 models:
   temperature: 0.2
   query_agent:
-    primary: "z_ai/glm-5.2"
+    primary: "google/gemini-3.5-flash"
     fallback:
+      - "z_ai/glm-5.2"
       - "google/gemini-3.5-pro"
       - "openai/gpt-5"
       - "deepseek/deepseek-chat"
       - "together/qwen-3.7max"
       - "dashscope/qwen-3.7max"
   ontology_agent:
-    primary: "z_ai/glm-5.2"
+    primary: "google/gemini-3.5-flash"
     fallback:
+      - "z_ai/glm-5.2"
       - "google/gemini-3.5-pro"
       - "openai/gpt-5"
       - "deepseek/deepseek-reasoner"
@@ -94,8 +96,9 @@ models:
       - "together/meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
       - "dashscope/qwen-plus"
   reflect_agent:
-    primary: "z_ai/glm-5.2"
+    primary: "google/gemini-3.5-flash"
     fallback:
+      - "z_ai/glm-5.2"
       - "google/gemini-3.5-pro"
       - "openai/gpt-5"
       - "deepseek/deepseek-chat"
